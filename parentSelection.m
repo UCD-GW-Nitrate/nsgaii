@@ -9,9 +9,10 @@ end
 
 switch options.Selection.Method
     case 'Tournament'
+        nActualPopulation = length(rank);
         for ii = 1:length(SelectedParents)
             while true
-                tourid = randperm(options.PopulationSize ,options.Selection.TourSize);
+                tourid = randperm(nActualPopulation ,options.Selection.TourSize);
                 minRank = min(rank(tourid));
                 idsWithMinRank = find(rank(tourid) == minRank);
                 if length(idsWithMinRank) == 1

@@ -1,4 +1,5 @@
 function xnew = crossoverParents(x, id, rank, accum, options)
+%disp('Crossover...');
 
 switch options.Crossover.Method
     case 'Uniform'
@@ -24,9 +25,6 @@ switch options.Crossover.Method
     case 'Heuristic'
         ii = 1;
         for jj = 1:2:length(id)
-            if jj+1 > options.PopulationSize
-                break;
-            end
             if rank(id(jj)) < rank(id(jj+1))
                 p1 = x(id(jj),:);
                 p2 = x(id(jj+1),:);
@@ -53,7 +51,17 @@ switch options.Crossover.Method
                 while true
                     r = abs(normrnd(0,s));
                     if s < 0
-                        r = 0;
+                        if rand > 0.5
+                            r = 0;
+                        else
+                            if newvalue < options.Xmin(k)
+                                 xnew(ii,k) = options.Xmin(k);
+                            elseif newvalue > options.Xmax(k)
+                                xnew(ii,k) = options.Xmax(k);
+                            end
+                            break;
+                        end
+                            
                     end
                     newvalue = p1(k) + r*(p1(k)-p2(k));
                     if newvalue > options.Xmin(k) && newvalue < options.Xmax(k)

@@ -1,14 +1,17 @@
-function plotParetoFronts(f, rank, method)
+function plotParetoFronts(f, rank, options)
 
 nRanks = max(rank);
 
 hold on
-switch method
+switch options.DominatingSortingType
     case 'Goldberg'
         for ii = 1:nRanks
             fRank = f(rank == ii,:);
             [x, d] = sort(fRank(:,1));
             plot(x, fRank(d,2), '.:')
+            if ~options.PlotAllFronts
+                break;
+            end
             text(x(1), fRank(d(1),2), num2str(ii), 'fontsize', 12);
         end
     case 'Fonseca'

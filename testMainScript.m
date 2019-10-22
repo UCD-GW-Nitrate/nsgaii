@@ -20,3 +20,9 @@ plotParetoFronts(f, rank, 'Goldberg');
 SelectedParents = parentSelection(rank, accum, nsga_opt);
 %% Crossover 
 xPopulation = crossoverParents(Population, SelectedParents, rank, accum, nsga_opt);
+%% Mutation
+xPopulation = mutation(xPopulation, nsga_opt);
+%% create inline function
+f = @(x)testObjectiveFunctions(x, 'ZDT3');
+%% Run NSGAII
+ParetoSolutions = nsgaii(f, nsga_opt);

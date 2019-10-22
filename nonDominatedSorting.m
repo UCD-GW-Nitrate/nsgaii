@@ -1,4 +1,5 @@
 function [rank, accum] = nonDominatedSorting(f, method)
+%disp('Non Dominating Sorting...');
 
 populationSize = size(f,1);
 rank = nan(populationSize,1);
@@ -9,9 +10,16 @@ switch method
         while ~isempty(poolID)
             dltID = [];
             for ii = 1:length(poolID)
-                test = f(poolID,1) < f(poolID(ii),1);
+                if ii == 1
+                    testSet = 2:length(poolID);
+                elseif ii == length(poolID)
+                    testSet = 1:length(poolID)-1;
+                else
+                   testSet = [1:ii-1 ii+1:length(poolID)]';
+                end
+                test = f(poolID(testSet),1) <= f(poolID(ii),1);
                 for jj = 2:size(f,2)
-                    test = test & f(poolID,jj) < f(poolID(ii),jj);
+                    test = test & f(poolID(testSet),jj) <= f(poolID(ii),jj);
                 end
                 nDominatingSolutions = sum(test);
                 if nDominatingSolutions == 0

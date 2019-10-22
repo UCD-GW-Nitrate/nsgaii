@@ -29,7 +29,7 @@ switch fun
         f(1) = x(1);
         f(2) = g*(1 - sqrt(x(1)/g));
         
-    case 'ZTD2'
+    case 'ZDT2'
         g = 1 + 9*sum(9*x(2:end))/(n-1);
         f(1) = x(1);
         f(2) = g*(1 - (x(1)/g)^2);
@@ -37,7 +37,7 @@ switch fun
     case 'ZDT3'
         g = 1 + 9*sum(x(2:end))/(n-1);
         f(1) = x(1);
-        f(2) = g*(1 - sqrt(x(1)/g) - (x(1)/g)*sin(10*pi*x(1)) );
+        f(2) = g*( 1 - sqrt(x(1)/g) - (x(1)/g)*sin(10*pi*x(1)) );
         
     case 'ZDT4'
         g = 1 + 10*(n-1) + sum(x(2:end).^2 - 10*cos(4*pi*x(2:end)));
