@@ -1,1 +1,10 @@
-*.asv
+/*
+!*.m
+!/CPP
+/CPP/*
+!CPP/nsgaii
+/CPP/nsgaii/*
+!CPP/nsgaii/*.cpp
+!CPP/nsgaii/*.h
+!CPP/nsgaii/*.sh
+!CPP/nsgaii/CMakeLists.txt
