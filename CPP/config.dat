@@ -1,0 +1,6 @@
+ProblemSize=3
+Nobjectives=2
+PopulationSize=50
+LowerBound=-5 -5 -5
+UpperBound=5 5 5
+OutputFile=D:\giorgk\Documents\GitHub\nsgaii\CPP\paretoSolutions.dat

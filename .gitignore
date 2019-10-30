@@ -2,6 +2,7 @@
 !*.m
 !/CPP
 /CPP/*
+!/CPP/*.dat
 !CPP/nsgaii
 /CPP/nsgaii/*
 !CPP/nsgaii/*.cpp
