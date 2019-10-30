@@ -8,3 +8,14 @@
 !CPP/nsgaii/*.h
 !CPP/nsgaii/*.sh
 !CPP/nsgaii/CMakeLists.txt
+!CPP/VSnsgaii
+/CPP/VSnsgaii/*
+!CPP/VSnsgaii/nsgaii
+/CPP/VSnsgaii/nsgaii/*
+!CPP/VSnsgaii/nsgaii/*.sln
+!CPP/VSnsgaii/nsgaii/nsgaii
+/CPP/VSnsgaii/nsgaii/nsgaii/*
+!CPP/VSnsgaii/nsgaii/nsgaii/*.cpp
+!CPP/VSnsgaii/nsgaii/nsgaii/*.h
+!CPP/VSnsgaii/nsgaii/nsgaii/nsgaii.vcxproj
+!CPP/VSnsgaii/nsgaii/nsgaii/nsgaii.vcxproj.filters

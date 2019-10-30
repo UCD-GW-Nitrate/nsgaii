@@ -18,14 +18,14 @@ while options.Generation < options.MaxGeneration
     [f, Population] = removeDuplicateSolutions(f, Population, options);
     
     [rank, accum] = nonDominatedSorting(f, options.DominatingSortingType);
+   
+    ParetoSolutions.f = f(rank == 1,:);
+    ParetoSolutions.x = Population(rank == 1,:);
     
     clf
     plotParetoFronts(f, rank, options);
-    title(['Generation: ' num2str(options.Generation)]);
+    title(['Generation: ' num2str(options.Generation), ' #Pareto: ' num2str(size(ParetoSolutions.f,1))]);
     drawnow
-    
-    ParetoSolutions.f = f(rank == 1,:);
-    ParetoSolutions.x = Population(rank == 1,:);
     
     selectedIds = selectSurvivors(rank, accum, options);
     Population = Population(selectedIds,:);

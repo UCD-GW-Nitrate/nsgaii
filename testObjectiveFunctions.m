@@ -22,7 +22,7 @@ switch fun
         
     case 'KUR'
         f(1) = sum(-10*exp(-0.2*sqrt(x(1:end-1).^2 + x(2:end).^2)));
-        f(2) = sum(abs(x).^0.8 + 5*x.^3);
+        f(2) = sum(abs(x).^0.8 + 5*sin(x.^3));
         
     case 'ZDT1'
         g = 1 + 9*sum(x(2:end))/(n-1);

@@ -29,12 +29,12 @@ ParetoSolutions = nsgaii(f, nsga_opt);
 
 %% Kursawe test
 nsga_opt = nsgaiiOptions(3);
+nsga_opt.PopulationSize = 50;
 nsga_opt.Xmin = -5*ones(1,3);
 nsga_opt.Xmax = 5*ones(1,3);
 nsga_opt.PlotAllFronts = false;
 f = @(x)testObjectiveFunctions(x, 'KUR');
 ParetoSolutions = nsgaii(f, nsga_opt);
-
 %% Zitzler 1 test
 nsga_opt = nsgaiiOptions(30);
 nsga_opt.PlotAllFronts = false;
