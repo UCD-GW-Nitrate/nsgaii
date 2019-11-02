@@ -32,5 +32,8 @@
     <ClInclude Include="nsgaii_testFunctions.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="c2vsim_io.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

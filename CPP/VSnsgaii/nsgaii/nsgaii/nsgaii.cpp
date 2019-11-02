@@ -13,6 +13,7 @@
 #include "nsgaii_core.h"
 #include "nsgaii_helper.h"
 #include "nsgaii_testFunctions.h"
+#include "c2vsim_io.h"
 
 NSGAII::SingletonRealGenerator* NSGAII::SingletonRealGenerator::_instance = nullptr;
 
@@ -21,6 +22,12 @@ int main(int argc, char* argv[])
 	boost::mpi::environment env;
 	boost::mpi::communicator world;
 
+	bool tf = C2VSIM::READERS::readGWBud("d:/giorgk/Documents/GitHub/C2VsimCG/RunC2Vsim/Results/CVground.BUD");
+	return 0;
+
+	std::map<int, std::vector<double> > GWH;
+	tf = C2VSIM::READERS::readGWHydOut("d:/giorgk/Documents/GitHub/C2VsimCG/RunC2Vsim/Results/CVGWhyd.out", GWH);
+	return 0;
 	
 	NSGAII::SingletonRealGenerator *RG = RG->getInstance();
 	RG->printSeed();
