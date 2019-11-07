@@ -14,6 +14,7 @@
 #include "nsgaii_helper.h"
 #include "nsgaii_testFunctions.h"
 #include "c2vsim_io.h"
+#include "c2vsim_ga.h"
 
 NSGAII::SingletonRealGenerator* NSGAII::SingletonRealGenerator::_instance = nullptr;
 
@@ -21,13 +22,6 @@ int main(int argc, char* argv[])
 {
 	boost::mpi::environment env;
 	boost::mpi::communicator world;
-
-	bool tf = C2VSIM::READERS::readGWBud("d:/giorgk/Documents/GitHub/C2VsimCG/RunC2Vsim/Results/CVground.BUD");
-	return 0;
-
-	std::map<int, std::vector<double> > GWH;
-	tf = C2VSIM::READERS::readGWHydOut("d:/giorgk/Documents/GitHub/C2VsimCG/RunC2Vsim/Results/CVGWhyd.out", GWH);
-	return 0;
 	
 	NSGAII::SingletonRealGenerator *RG = RG->getInstance();
 	RG->printSeed();
@@ -35,6 +29,7 @@ int main(int argc, char* argv[])
 
 	NSGAII::options opt;
 	bool bCheckInputs = false;
+	C2VSIM::OPTIONS::options cvopt;
 	if (world.rank() == 0) {
 		std::cout << "Current path:" << std::endl;
 		std::cout << boost::filesystem::current_path() << std::endl;
@@ -45,17 +40,30 @@ int main(int argc, char* argv[])
 		return 0;
 	boost::mpi::broadcast(world, opt.Nobjectives, 0);
 	boost::mpi::broadcast(world, opt.MaxGenerations, 0);
+	boost::mpi::broadcast(world, opt.bUseModel, 0);
 
+	if (opt.bUseModel) {
+		bCheckInputs = C2VSIM::OPTIONS::readConfigFile(argc, argv, cvopt);
+	}
+
+	
 	// Start timing
 	auto start = std::chrono::high_resolution_clock::now();
 
 	// Generate and distribute initial population
 	NSGAII::Population pop(opt);
+	C2VSIM::c2vsimData CVD(cvopt);
+	if (opt.bUseModel)
+		CVD.readInputFiles();
+	//std::cout << "Processor " << world.rank() << " has " << cvopt.Nsteps << std::endl;
+	//CVD.debugMsg();
+	
 	
 	if (world.rank() == 0) {
 		pop.initializePopulation();
 		//pop.printPopulation();
 	}
+
 
 	int currentGeneration = 0;
 	while (currentGeneration < opt.MaxGenerations) {
@@ -74,10 +82,13 @@ int main(int argc, char* argv[])
 			itind = pop.population.find(i);
 			if (itind != pop.population.end()) {
 				std::vector<double> ObjectiveFunctionValues;
-				NSGAII::Kursawe(itind->second.decisionVariables, ObjectiveFunctionValues);
+				//NSGAII::Kursawe(itind->second.decisionVariables, ObjectiveFunctionValues);
+				C2VSIM::OF::maxWTminArea(itind->second.decisionVariables, ObjectiveFunctionValues, CVD);
 				solutions.insert(std::pair<int, std::vector<double > >(itind->first, ObjectiveFunctionValues));
 			}
 		}
+
+		return 0;
 
 		// Find out the maximum number of solutions that a processor has to send
 		int MaxSolutions = 0;

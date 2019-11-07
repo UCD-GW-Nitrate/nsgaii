@@ -63,7 +63,7 @@ namespace NSGAII {
 	public:
 
 		void printSeed() {
-			//std::cout << "Seed: " << seed << std::endl;
+			std::cout << "Seed: " << seed << std::endl;
 			//std::cout << "a,b" << uniformDistribution.a() << "," << uniformDistribution.b() << std::endl;
 			//std::cout << "m,s" << normalDistribution.mean() << "," << normalDistribution.sigma() << std::endl;
 		}

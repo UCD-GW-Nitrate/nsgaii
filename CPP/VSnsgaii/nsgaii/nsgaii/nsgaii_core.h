@@ -108,25 +108,23 @@ namespace NSGAII {
 		//std::map<int, std::vector<double> >::iterator it;
 		std::map<int, Individual>::iterator it;
 
-		for (int ivar = 0; ivar < options.ProblemSize; ++ivar) {
-			//unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
-			//std::cout << "Seed: " << seed << std::endl;
-			//std::default_random_engine generator(seed);
-			//std::uniform_real_distribution<double> distribution(options.LowerBound[ivar], options.UpperBound[ivar]);
-			for (int i = 0; i < options.PopulationSize; ++i) {
-				it = population.find(i);
-				if (it == population.end()) {
-					Individual individual;
+		for (int i = 0; i < options.PopulationSize; ++i) {
+			Individual individual;
+			for (int ivar = 0; ivar < options.ProblemSize; ++ivar) {
+				if (options.populationType.compare("REAL") == 0) {
 					individual.decisionVariables.push_back(RG->randomNumber(options.LowerBound[ivar], options.UpperBound[ivar]));
-					population.insert(std::pair<int, Individual>(i, individual));
 				}
-				else {
-					it->second.decisionVariables.push_back(RG->randomNumber(options.LowerBound[ivar], options.UpperBound[ivar]));
+				else if (options.populationType.compare("BINARY") == 0)
+				{
+					double r = RG->randomNumber();
+					if (r > 0.5)
+						individual.decisionVariables.push_back(1);
+					else
+						individual.decisionVariables.push_back(0);
 				}
 			}
+			population.insert(std::pair<int, Individual>(i, individual));
 		}
-
-		//std::cout << "Done" << std::endl;
 	}
 
 	void Population::broadcast(boost::mpi::communicator& world) {
@@ -366,45 +364,90 @@ namespace NSGAII {
 		std::vector<std::vector<double> > newPopulation;
 
 		for (unsigned ichild = 0; ichild < selectedParentIds.size(); ++ichild) {
+			std::vector<double> child;
 			ita = population.find(selectedParentIds[ichild].first);
 			itb = population.find(selectedParentIds[ichild].second);
 			if (ita == population.end() || itb == population.end())
 				continue;
-			int out = ita->second.compareRanking(itb->second);
-			double best, worst;
 
-			std::vector<double> child;
-			// find which parent is the fittests
-
-			for (int ivar = 0; ivar < options.ProblemSize; ++ivar) {
-				double r = RG->normalRandom(0, options.SDheuristic);
-				double x;
-				if (out == 1) {
-					best = ita->second.decisionVariables[ivar];
-					worst = itb->second.decisionVariables[ivar];
-					
+			if (options.XoverType.compare("ONECUT") == 0) {
+				int cut = RG->randomNumber(1, options.ProblemSize-1);
+				for (int ivar = 0; ivar < options.ProblemSize; ++ivar) {
+					if (ivar <= cut)
+						child.push_back(ita->second.decisionVariables[ivar]);
+					else
+						child.push_back(itb->second.decisionVariables[ivar]);
+				}
+			}
+			else if (options.XoverType.compare("TWOCUT") == 0) {
+				double one_third = static_cast<double>(options.ProblemSize) / 3.0;
+				int cut1 = RG->randomNumber(1, static_cast<int>(2*one_third));
+				int cut2 = RG->randomNumber(cut1+1, options.ProblemSize - 1);
+				std::vector<double> pa, pb;
+				if (RG->randomNumber() > 0.5) {
+					pa = ita->second.decisionVariables;
+					pb = itb->second.decisionVariables;
 				}
 				else {
-					best = itb->second.decisionVariables[ivar];
-					worst = ita->second.decisionVariables[ivar];
+					pa = itb->second.decisionVariables;
+					pb = ita->second.decisionVariables;
 				}
 
-				x = best + r * (best - worst);
-
-				if (x < options.LowerBound[ivar] || x > options.UpperBound[ivar]) {
-					double reduseS = 0.95;
-					while (true) {
-						r = RG->normalRandom(0, options.SDheuristic) * reduseS;
-						x = best + r * (best - worst);
-						if (x < options.LowerBound[ivar] || x > options.UpperBound[ivar]) {
-							reduseS = reduseS * 0.95;
-						}
-						else
-							break;
+				for (int ivar = 0; ivar < options.ProblemSize; ++ivar) {
+					if (ivar <= cut1)
+						child.push_back(pa[ivar]);
+					else if (ivar > cut1 & ivar <= cut2){
+						child.push_back(pb[ivar]);
+					}
+					else {
+						child.push_back(pa[ivar]);
 					}
 				}
-				child.push_back(x);
 			}
+			else if (options.XoverType.compare("UNIBIN") == 0) {
+				for (int ivar = 0; ivar < options.ProblemSize; ++ivar) {
+					if (RG->randomNumber() > 0.5) 
+						child.push_back(ita->second.decisionVariables[ivar]);
+					else
+						child.push_back(itb->second.decisionVariables[ivar]);
+				}
+			}
+			else if (options.XoverType.compare("HEURISTIC") == 0) {
+				int out = ita->second.compareRanking(itb->second);
+				double best, worst;
+				// find which parent is the fittests
+
+				for (int ivar = 0; ivar < options.ProblemSize; ++ivar) {
+					double r = RG->normalRandom(0, options.SDheuristic);
+					double x;
+					if (out == 1) {
+						best = ita->second.decisionVariables[ivar];
+						worst = itb->second.decisionVariables[ivar];
+					
+					}
+					else {
+						best = itb->second.decisionVariables[ivar];
+						worst = ita->second.decisionVariables[ivar];
+					}
+
+					x = best + r * (best - worst);
+
+					if (x < options.LowerBound[ivar] || x > options.UpperBound[ivar]) {
+						double reduseS = 0.95;
+						while (true) {
+							r = RG->normalRandom(0, options.SDheuristic) * reduseS;
+							x = best + r * (best - worst);
+							if (x < options.LowerBound[ivar] || x > options.UpperBound[ivar]) {
+								reduseS = reduseS * 0.95;
+							}
+							else
+								break;
+						}
+					}
+					child.push_back(x);
+				}
+			}
+			
 			newPopulation.push_back(child);
 		}
 
@@ -466,7 +509,7 @@ namespace NSGAII {
 		std::map<int, Individual>::iterator it;
 		std::ofstream outfile;
 		outfile.open(options.OutputFile);
-		outfile << ParetoSize() << " " << options.ProblemSize << " " << options.Nobjectives <<  std::endl;
+		outfile << ParetoSize() << " " << options.ProblemSize << " " << options.Nobjectives << std::endl;
 		for (it = ParetoSolutions.begin(); it != ParetoSolutions.end(); ++it) {
 			for (unsigned int i = 0; i < it->second.decisionVariables.size(); ++i) {
 				outfile << it->second.decisionVariables[i] << " ";

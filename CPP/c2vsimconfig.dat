@@ -1,0 +1,10 @@
+Nsteps=1056
+divSpecFile=d:\giorgk\Documents\GitHub\C2VsimCG\RunC2Vsim\divspec.dat
+divDataFile=d:\giorgk\Documents\GitHub\C2VsimCG\RunC2Vsim\divdata.dat
+divElemFile=d:\giorgk\Documents\GitHub\C2VsimCG\RunC2Vsim\divElem.dat
+divTimeSeriesFile=d:\giorgk\Documents\GitHub\C2VsimCG\RunC2Vsim\divTimeSeries.dat
+BaseWTfile=d:\giorgk\Documents\GitHub\C2VsimCG\RunC2Vsim\CVGWhydBase.out
+ElementInfofile=d:\giorgk\Documents\GitHub\C2VsimCG\RunC2Vsim\ElemInfo.dat
+BaseGWbudFile=d:\giorgk\Documents\GitHub\C2VsimCG\RunC2Vsim\CVgroundBase.BUD
+SimulationExe=d:\giorgk\Documents\GitHub\C2VsimCG\c2vsim_cg_1921ic_r374_rev\C2VSim_CG_1921IC_R374_rev\bin\Simulation3.02.exe
+BudgetExe=d:\giorgk\Documents\GitHub\C2VsimCG\c2vsim_cg_1921ic_r374_rev\C2VSim_CG_1921IC_R374_rev\bin\Budget3.02.exe

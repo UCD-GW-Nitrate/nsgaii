@@ -154,6 +154,7 @@
     <ClCompile Include="nsgaii.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="c2vsim_ga.h" />
     <ClInclude Include="c2vsim_io.h" />
     <ClInclude Include="nsgaii_core.h" />
     <ClInclude Include="nsgaii_helper.h" />

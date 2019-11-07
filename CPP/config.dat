@@ -1,6 +1,12 @@
-ProblemSize=3
-Nobjectives=2
-PopulationSize=50
-LowerBound=-5 -5 -5
-UpperBound=5 5 5
+PopulationType=BINARY
 OutputFile=D:\giorgk\Documents\GitHub\nsgaii\CPP\paretoSolutions.dat
+ProblemSize=294
+Nobjectives=2
+PopulationSize=100
+LowerBound=0
+UpperBound=1
+TournamentSize=4
+SDheuristic=0.25
+MutationProbability=0.01
+MaxGenerations=200
+XoverType=ONECUT
