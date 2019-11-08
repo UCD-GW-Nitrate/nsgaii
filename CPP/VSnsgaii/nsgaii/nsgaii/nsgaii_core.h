@@ -1,8 +1,8 @@
 #pragma once
 
 #include <iostream>
-#include <random>
-#include <chrono>
+//#include <random>
+//#include <chrono>
 #include <boost/mpi.hpp>
 
 #include "nsgaii_options.h"
@@ -467,21 +467,34 @@ namespace NSGAII {
 
 		NSGAII::SingletonRealGenerator* RG = RG->getInstance();
 
-
+		bool binaryMutation = options.populationType.compare("BINARY") == 0;
+		
 		std::map<int, Individual>::iterator it;
 		for (it = population.begin(); it != population.end(); ++it) {
 			for (unsigned int ivar = 0; ivar < it->second.decisionVariables.size(); ++ivar) {
 				double r = RG->randomNumber();
 				if (r < options.MutationProbability) {
-					it->second.decisionVariables[ivar] = RG->randomNumber(options.LowerBound[ivar], options.UpperBound[ivar]);
+					if (binaryMutation) {
+						if (it->second.decisionVariables[ivar] > 0.5)
+							it->second.decisionVariables[ivar] = 0;
+						else
+							it->second.decisionVariables[ivar] = 1;
+					}
+					else
+						it->second.decisionVariables[ivar] = RG->randomNumber(options.LowerBound[ivar], options.UpperBound[ivar]);
 				}
 
-				if (it->second.decisionVariables[ivar] < options.LowerBound[ivar])
-					it->second.decisionVariables[ivar] = options.LowerBound[ivar];
-				if (it->second.decisionVariables[ivar] > options.UpperBound[ivar])
-					it->second.decisionVariables[ivar] = options.UpperBound[ivar];
+				if (!binaryMutation) {
+					if (it->second.decisionVariables[ivar] < options.LowerBound[ivar])
+						it->second.decisionVariables[ivar] = options.LowerBound[ivar];
+					if (it->second.decisionVariables[ivar] > options.UpperBound[ivar])
+						it->second.decisionVariables[ivar] = options.UpperBound[ivar];
+				}
 			}
 		}
+		
+
+		
 	}
 
 	void Population::appendParetoSolutions() {

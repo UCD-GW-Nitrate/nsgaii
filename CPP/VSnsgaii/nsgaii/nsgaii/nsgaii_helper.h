@@ -1,22 +1,25 @@
 #pragma once
 
 #include <iostream>
-#include <random>
-#include <chrono>
+//#include <random>
+//#include <chrono>
+#include <boost/random/uniform_real_distribution.hpp>
+#include <boost/random/mersenne_twister.hpp>
+#include <boost/random/normal_distribution.hpp>
 
 #include <boost/mpi.hpp>
 
 namespace NSGAII {
-	void test_random_Numbers() {
-		unsigned int seed = std::chrono::system_clock::now().time_since_epoch().count();
-		std::cout << "Seed: " << seed << std::endl;
-		std::default_random_engine generator(seed);
-		std::uniform_real_distribution<double> distribution(0.0, 10.0);
-		for (int i = 0; i < 20; ++i) {
-			double x = distribution(generator);
-			std::cout << std::fixed << x << std::endl;
-		}
-	}
+	//void test_random_Numbers() {
+	//	unsigned int seed = std::chrono::system_clock::now().time_since_epoch().count();
+	//	std::cout << "Seed: " << seed << std::endl;
+	//	std::default_random_engine generator(seed);
+	//	std::uniform_real_distribution<double> distribution(0.0, 10.0);
+	//	for (int i = 0; i < 20; ++i) {
+	//		double x = distribution(generator);
+	//		std::cout << std::fixed << x << std::endl;
+	//	}
+	//}
 
 
 	template<typename T>
@@ -50,15 +53,18 @@ namespace NSGAII {
 
 		// private constructor
 		SingletonRealGenerator() {
-			seed = std::chrono::system_clock::now().time_since_epoch().count();
-			generator.seed(seed);
+			//seed = std::chrono::system_clock::now().time_since_epoch().count();
+			generator.seed(std::time(0));
 		}
 
-		std::uniform_real_distribution<double> uniformDistribution;
-		std::normal_distribution<double> normalDistribution;
+		boost::random::uniform_real_distribution<double> uniformDistribution;
+		//std::uniform_real_distribution<double> uniformDistribution;
+		boost::random::normal_distribution<double> normalDistribution;
+		//std::normal_distribution<double> normalDistribution;
 
 		//std::default_random_engine generator;
-		std::mt19937 generator;
+		//std::mt19937 generator;
+		boost::mt19937 generator;
 
 	public:
 

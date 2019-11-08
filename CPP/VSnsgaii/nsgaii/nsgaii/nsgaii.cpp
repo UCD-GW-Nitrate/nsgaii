@@ -5,8 +5,10 @@
 #include <boost/mpi.hpp>
 #include <boost/mpi/environment.hpp>
 #include <boost/mpi/communicator.hpp>
-#include <random>
-#include <chrono>
+//#include <random>
+//#include <chrono>
+#include <boost/timer/timer.hpp>
+#include <boost/chrono.hpp>
 #include <boost/filesystem.hpp>
 
 #include "nsgaii_options.h"
@@ -48,13 +50,15 @@ int main(int argc, char* argv[])
 
 	
 	// Start timing
-	auto start = std::chrono::high_resolution_clock::now();
+	//auto start = std::chrono::high_resolution_clock::now();
+	boost::timer::cpu_timer timer;
 
 	// Generate and distribute initial population
 	NSGAII::Population pop(opt);
 	C2VSIM::c2vsimData CVD(cvopt);
 	if (opt.bUseModel)
 		CVD.readInputFiles();
+	world.barrier();
 	//std::cout << "Processor " << world.rank() << " has " << cvopt.Nsteps << std::endl;
 	//CVD.debugMsg();
 	
@@ -63,7 +67,6 @@ int main(int argc, char* argv[])
 		pop.initializePopulation();
 		//pop.printPopulation();
 	}
-
 
 	int currentGeneration = 0;
 	while (currentGeneration < opt.MaxGenerations) {
@@ -88,7 +91,8 @@ int main(int argc, char* argv[])
 			}
 		}
 
-		return 0;
+		world.barrier();
+		
 
 		// Find out the maximum number of solutions that a processor has to send
 		int MaxSolutions = 0;
@@ -186,10 +190,13 @@ int main(int argc, char* argv[])
 		world.barrier();
 		currentGeneration++;
 	}
-	auto finish = std::chrono::high_resolution_clock::now();
-	std::chrono::duration<double> elapsed = finish - start;
+
+	boost::chrono::duration<double> seconds = boost::chrono::nanoseconds(timer.elapsed().user);
+	//std::cout << seconds.count() << std::endl;
+	//auto finish = std::chrono::high_resolution_clock::now();
+	//std::chrono::duration<double> elapsed = finish - start;
 	if (world.rank() == 0)
-		std::cout << "Optimization executed in " << elapsed.count() << std::endl;
+		std::cout << "Optimization executed in " << seconds.count() << std::endl;
 	pop.printPareto();
 	return 0;
 	

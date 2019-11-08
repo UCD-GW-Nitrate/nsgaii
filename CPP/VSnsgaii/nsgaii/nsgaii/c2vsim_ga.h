@@ -198,6 +198,7 @@ namespace C2VSIM {
 			sim_command.append(" CVsim.in");
 			bud_command.append(" CVBudget.in");
 
+
 			system(sim_command.c_str());
 			system(bud_command.c_str());
 			//Read the output while in the path
@@ -214,12 +215,20 @@ namespace C2VSIM {
 
 			std::map<int, std::vector<double> >::iterator itwt;
 			double f = 0;
+			double cntf = 0;
+			double fmax = -999999;
+			double x;
 			for (itwt = simGWhyd.begin(); itwt != simGWhyd.end(); ++itwt) {
 				std::vector<double> baseHead = cvd.GWHbaseValue(itwt->first);
 				for (unsigned int i = 0; i < itwt->second.size(); ++i) {
-					f += itwt->second[i] - baseHead[i];
+					x = itwt->second[i] - baseHead[i];
+					f += x;
+					if (x > fmax)
+						fmax = x;
+					cntf = cntf + 1.0;
 				}
 			}
+			std::cout << "Mean: " << f / cntf << ", Max: " << fmax << ", Sum: " << f << std::endl;
 			fun.clear();
 			fun.push_back(f);
 			fun.push_back(area);

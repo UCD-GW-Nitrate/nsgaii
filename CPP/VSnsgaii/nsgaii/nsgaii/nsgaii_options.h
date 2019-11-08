@@ -18,7 +18,6 @@ namespace NSGAII {
 			x = boost::lexical_cast<double>(temp[i]);
 			out.push_back(x);
 		}
-
 	}
 
 	//enum crossoverType {ONECUT, TWOCUT, UNIFORM,HEURISTIC};
