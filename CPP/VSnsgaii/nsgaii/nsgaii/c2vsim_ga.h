@@ -24,6 +24,7 @@ namespace C2VSIM {
 		std::string simulationExe();
 		std::string budgetExe();
 		std::vector<double> GWHbaseValue(int node);
+		int nsteps();
 
 	private:
 		C2VSIM::OPTIONS::options options;
@@ -50,9 +51,9 @@ namespace C2VSIM {
 		C2VSIM::READERS::readDivTimeSeries(options.divTimeSeriesFile, DTS);
 		C2VSIM::READERS::readDivSpec(options.divSpecFile, divData);
 		C2VSIM::READERS::readDivData(options.divDataFile, divData, options.Nsteps);
-		C2VSIM::READERS::readGWHydOut(options.BaseWTfile, GWH);
+		C2VSIM::READERS::readGWHydOut(options.BaseWTfile, GWH, options.Nsteps);
 		C2VSIM::READERS::readElemInfo(options.ElementInfofile, elemInfoMap);
-		C2VSIM::READERS::readGWBud(options.BaseGWbudFile, GWBUD);
+		C2VSIM::READERS::readGWBud(options.BaseGWbudFile, GWBUD, options.Nsteps);
 	}
 
 	void c2vsimData::makeElemDiv() {
@@ -116,6 +117,9 @@ namespace C2VSIM {
 	}
 	std::string c2vsimData::budgetExe() {
 		return options.BudgetExe;
+	}
+	int c2vsimData::nsteps() {
+		return options.Nsteps;
 	}
 
 	std::vector<double> c2vsimData::GWHbaseValue(int node) {
@@ -204,8 +208,8 @@ namespace C2VSIM {
 			//Read the output while in the path
 			std::map<int, std::vector<double> > simGWhyd;
 			C2VSIM::GWbudTimeSeries simGBbud;
-			C2VSIM::READERS::readGWHydOut("d:/giorgk/Documents/GitHub/C2VsimCG/RunC2Vsim/Results/CVGWhyd.out", simGWhyd);
-			C2VSIM::READERS::readGWBud("d:/giorgk/Documents/GitHub/C2VsimCG/RunC2Vsim/Results/CVground.BUD", simGBbud);
+			C2VSIM::READERS::readGWHydOut("d:/giorgk/Documents/GitHub/C2VsimCG/RunC2Vsim/Results/CVGWhyd.out", simGWhyd, cvd.nsteps());
+			C2VSIM::READERS::readGWBud("d:/giorgk/Documents/GitHub/C2VsimCG/RunC2Vsim/Results/CVground.BUD", simGBbud, cvd.nsteps());
 
 			std::cout << "Model finished" << std::endl;
 			boost::filesystem::current_path(main_dir);

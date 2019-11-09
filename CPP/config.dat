@@ -1,5 +1,6 @@
 PopulationType=BINARY
 OutputFile=D:\giorgk\Documents\GitHub\nsgaii\CPP\paretoSolutions.dat
+HistoryFile=D:\giorgk\Documents\GitHub\nsgaii\CPP\paretoHistory.dat
 ProblemSize=294
 Nobjectives=2
 PopulationSize=100

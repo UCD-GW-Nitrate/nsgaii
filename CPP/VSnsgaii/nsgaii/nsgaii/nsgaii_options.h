@@ -32,9 +32,11 @@ namespace NSGAII {
 		double SDheuristic;
 		double MutationProbability;
 		std::string OutputFile;
+		std::string HistoryFile;
 		std::vector<double> LowerBound;
 		std::vector<double> UpperBound;
 		bool bUseModel = false;
+		bool bWriteHistory = false;
 		std::string XoverType;
 	};
 
@@ -74,6 +76,7 @@ namespace NSGAII {
 		config_options.add_options()
 			("PopulationType", po::value<std::string>(), "Type of Population: REAL or BINARY")
 			("OutputFile", po::value<std::string>(), "The file where the Output will be written")
+			("HistoryFile", po::value<std::string>(), "The file where the fronts for each generation are written")
 			("ProblemSize", po::value<int>()->default_value(10), "Number of desicion variables")
 			("Nobjectives", po::value<int>()->default_value(2), "Number of conflicting objectives")
 			("PopulationSize", po::value<int>()->default_value(100), "Population size of GA")
@@ -131,6 +134,11 @@ namespace NSGAII {
 				opt.OutputFile = vm_cfg["OutputFile"].as<std::string>();
 			else
 				opt.OutputFile = "nsgaiiOutput.dat";
+
+			if (vm_cfg.count("HistoryFile")) {
+				opt.HistoryFile = vm_cfg["HistoryFile"].as<std::string>();
+				opt.bWriteHistory = true;
+			}
 			
 			if (opt.populationType.compare("REAL") == 0) {
 				std::vector<std::string> temp = vm_cfg["LowerBound"].as<std::vector<std::string> >();

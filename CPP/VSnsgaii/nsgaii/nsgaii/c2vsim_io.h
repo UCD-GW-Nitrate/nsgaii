@@ -272,7 +272,7 @@ namespace C2VSIM {
 	}
 
 	namespace READERS {
-		bool readGWHydOut(std::string filename, std::map<int, std::vector<double> >& GWH) {
+		bool readGWHydOut(std::string filename, std::map<int, std::vector<double> >& GWH, int nsteps) {
 			std::ifstream GWfile;
 			GWfile.open(filename);
 			if (!GWfile.is_open()) {
@@ -285,9 +285,9 @@ namespace C2VSIM {
 			}
 			std::string s;
 			double x;
-			std::vector<std::vector<double> > values(1393, std::vector<double>(1056, 0.0));
+			std::vector<std::vector<double> > values(1393, std::vector<double>(nsteps, 0.0));
 
-			for (unsigned int i = 0; i < 1056; ++i) {
+			for (int i = 0; i < nsteps; ++i) {
 				GWfile >> s;
 				for (unsigned int j = 0; j < 1393; ++j) {
 					GWfile >> x;
@@ -303,7 +303,7 @@ namespace C2VSIM {
 			return true;
 		}
 
-		bool readGWBud(std::string filename, GWbudTimeSeries& GWTS) {
+		bool readGWBud(std::string filename, GWbudTimeSeries& GWTS, int nsteps) {
 			std::ifstream gwBudfile;
 			gwBudfile.open(filename);
 			if (!gwBudfile.is_open()) {
@@ -327,7 +327,7 @@ namespace C2VSIM {
 						break;
 				}
 
-				for (unsigned int i = 0; i < 1056; ++i) {
+				for (int i = 0; i < nsteps; ++i) {
 					gwBudfile >> temp;
 					GWBUD gw;
 					gw.read(gwBudfile);

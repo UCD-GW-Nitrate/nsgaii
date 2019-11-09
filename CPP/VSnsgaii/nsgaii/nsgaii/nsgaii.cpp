@@ -65,6 +65,8 @@ int main(int argc, char* argv[])
 	
 	if (world.rank() == 0) {
 		pop.initializePopulation();
+		if (opt.bWriteHistory)
+			pop.openHistoryFile();
 		//pop.printPopulation();
 	}
 
@@ -183,6 +185,9 @@ int main(int argc, char* argv[])
 			pop.selectParents();
 			pop.crossOver();
 			pop.mutation();
+
+			if (opt.bWriteHistory)
+				pop.printCurrentPareto(currentGeneration);
 		}
 		else {
 			pop.population.clear();
@@ -195,8 +200,11 @@ int main(int argc, char* argv[])
 	//std::cout << seconds.count() << std::endl;
 	//auto finish = std::chrono::high_resolution_clock::now();
 	//std::chrono::duration<double> elapsed = finish - start;
-	if (world.rank() == 0)
+	if (world.rank() == 0) {
 		std::cout << "Optimization executed in " << seconds.count() << std::endl;
+		if (opt.bWriteHistory)
+			pop.closeHistoryFile();
+	}
 	pop.printPareto();
 	return 0;
 	

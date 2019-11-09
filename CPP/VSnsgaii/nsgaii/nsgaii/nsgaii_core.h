@@ -81,6 +81,9 @@ namespace NSGAII {
 		void printObjectives();
 		void printPopulation();
 		int ParetoSize();
+		void openHistoryFile();
+		void closeHistoryFile();
+		void printCurrentPareto(int gen);
 
 		NSGAII::options options;
 		std::map<int, Individual> population;
@@ -92,6 +95,7 @@ namespace NSGAII {
 		std::vector<std::pair<int, int> > selectedParentIds;
 		void appendParetoSolutions();
 		int tournament();
+		std::ofstream historyfile;
 
 	};
 
@@ -538,5 +542,24 @@ namespace NSGAII {
 
 
 		outfile.close();
+	}
+
+	void Population::openHistoryFile() {
+		historyfile.open(options.HistoryFile);
+	}
+
+	void Population::closeHistoryFile() {
+		historyfile.close();
+	}
+
+	void Population::printCurrentPareto(int gen) {
+		std::map<int, Individual>::iterator it;
+		historyfile << gen << " " << options.Nobjectives << " " << ParetoSize() << std::endl;
+		for (it = ParetoSolutions.begin(); it != ParetoSolutions.end(); ++it) {
+			for (unsigned int i = 0; i < it->second.objectiveFunctions.size(); ++i) {
+				historyfile << it->second.objectiveFunctions[i] << " ";
+			}
+			historyfile << std::endl;
+		}
 	}
 }
