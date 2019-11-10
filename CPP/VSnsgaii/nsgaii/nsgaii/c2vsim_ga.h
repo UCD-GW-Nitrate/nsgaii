@@ -50,7 +50,7 @@ namespace C2VSIM {
 		makeElemDiv();
 		C2VSIM::READERS::readDivTimeSeries(options.divTimeSeriesFile, DTS);
 		C2VSIM::READERS::readDivSpec(options.divSpecFile, divData);
-		C2VSIM::READERS::readDivData(options.divDataFile, divData, options.Nsteps);
+		C2VSIM::READERS::readDivData(options.divDataFile, divData, 1056);
 		C2VSIM::READERS::readGWHydOut(options.BaseWTfile, GWH, options.Nsteps);
 		C2VSIM::READERS::readElemInfo(options.ElementInfofile, elemInfoMap);
 		C2VSIM::READERS::readGWBud(options.BaseGWbudFile, GWBUD, options.Nsteps);
@@ -136,7 +136,7 @@ namespace C2VSIM {
 
 	namespace OF {
 		void maxWTminArea(std::vector<double>& var, std::vector<double>& fun, C2VSIM::c2vsimData& cvd) {
-			NSGAII::SingletonRealGenerator* RG = RG->getInstance();
+			//NSGAII::SingletonRealGenerator* RG = RG->getInstance();
 			
 			// find the diversion nodes and the elements to apply the water
 			std::map<int, std::vector<int> > nodeElemMap;
@@ -184,12 +184,6 @@ namespace C2VSIM {
 				divData.appendDiversion(div, TS);
 			}
 
-			fun.clear();
-			fun.push_back(RG->randomNumber(1000000, 2000000));
-			fun.push_back(area);
-			return;
-
-
 			C2VSIM::WRITERS::writeDivSpec("d:/giorgk/Documents/GitHub/C2VsimCG/RunC2Vsim/tempSpec.dat", divData);
 			C2VSIM::WRITERS::writeDivData("d:/giorgk/Documents/GitHub/C2VsimCG/RunC2Vsim/tempData.dat", divData);
 			std::string main_dir = boost::filesystem::current_path().string();
@@ -198,18 +192,18 @@ namespace C2VSIM {
 			std::cout << boost::filesystem::current_path() << std::endl;
 			
 			std::string sim_command = cvd.simulationExe();
-			std::string bud_command = cvd.budgetExe();
+			//std::string bud_command = cvd.budgetExe();
 			sim_command.append(" CVsim.in");
-			bud_command.append(" CVBudget.in");
+			//bud_command.append(" CVBudget.in");
 
 
 			system(sim_command.c_str());
-			system(bud_command.c_str());
+			//system(bud_command.c_str());
 			//Read the output while in the path
 			std::map<int, std::vector<double> > simGWhyd;
 			C2VSIM::GWbudTimeSeries simGBbud;
 			C2VSIM::READERS::readGWHydOut("d:/giorgk/Documents/GitHub/C2VsimCG/RunC2Vsim/Results/CVGWhyd.out", simGWhyd, cvd.nsteps());
-			C2VSIM::READERS::readGWBud("d:/giorgk/Documents/GitHub/C2VsimCG/RunC2Vsim/Results/CVground.BUD", simGBbud, cvd.nsteps());
+			//C2VSIM::READERS::readGWBud("d:/giorgk/Documents/GitHub/C2VsimCG/RunC2Vsim/Results/CVground.BUD", simGBbud, cvd.nsteps());
 
 			std::cout << "Model finished" << std::endl;
 			boost::filesystem::current_path(main_dir);
@@ -218,23 +212,61 @@ namespace C2VSIM {
 			std::cout << "all is" << tf << std::endl;
 
 			std::map<int, std::vector<double> >::iterator itwt;
-			double f = 0;
-			double cntf = 0;
-			double fmax = -999999;
-			double x;
+			//double f = 0;
+			//double cntf = 0;
+			//double fmax = -999999;
+			//double x;
+			//for (itwt = simGWhyd.begin(); itwt != simGWhyd.end(); ++itwt) {
+			//	std::vector<double> baseHead = cvd.GWHbaseValue(itwt->first);
+			//	for (unsigned int i = 0; i < itwt->second.size(); ++i) {
+			//		x = itwt->second[i] - baseHead[i];
+			//		//if (x < -50)
+			//		//	continue;
+			//		f += x;
+			//		if (x > fmax)
+			//			fmax = x;
+			//		cntf = cntf + 1.0;
+			//	}
+			//}
+
+			double fp = 0;
+			double rate = 0.9;
+			double dx = 3.28084;
+			double x, xp, w, xs, xe;
 			for (itwt = simGWhyd.begin(); itwt != simGWhyd.end(); ++itwt) {
 				std::vector<double> baseHead = cvd.GWHbaseValue(itwt->first);
 				for (unsigned int i = 0; i < itwt->second.size(); ++i) {
 					x = itwt->second[i] - baseHead[i];
-					f += x;
-					if (x > fmax)
-						fmax = x;
-					cntf = cntf + 1.0;
+					if (x < 0)
+						fp += x;
+					else if (x > 0) {
+						if (x > 10)
+							bool tf = true;
+						xp = 0;
+						xs = 0;
+						xe = dx;
+						w = 1;
+						while (xp < x) {
+							if (xe > x)
+								xe = x;
+							fp += (xe - xs) * w;
+							xs += dx;
+							xe += dx;
+							w = w * rate;
+							xp += dx;
+						}
+					}
+					//if (x < -60)
+					//	continue;
+					//if (x > fmax)
+					//	fmax = x;
+					//cntf = cntf + 1.0;
 				}
 			}
-			std::cout << "Mean: " << f / cntf << ", Max: " << fmax << ", Sum: " << f << std::endl;
+
+			//std::cout << "Mean: " << f / cntf << ", Max: " << fmax << ", Sum: " << f << std::endl;
 			fun.clear();
-			fun.push_back(f);
+			fun.push_back(-fp);
 			fun.push_back(area);
 		}
 	}
