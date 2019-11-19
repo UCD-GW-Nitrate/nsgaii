@@ -136,7 +136,7 @@ namespace C2VSIM {
 
 	namespace OF {
 		void maxWTminArea(std::vector<double>& var, std::vector<double>& fun, C2VSIM::c2vsimData& cvd) {
-			//NSGAII::SingletonRealGenerator* RG = RG->getInstance();
+			NSGAII::SingletonRealGenerator* RG = RG->getInstance();
 			
 			// find the diversion nodes and the elements to apply the water
 			std::map<int, std::vector<int> > nodeElemMap;
@@ -183,6 +183,12 @@ namespace C2VSIM {
 				}
 				divData.appendDiversion(div, TS);
 			}
+
+			//fun.clear();
+			//fun.push_back(-RG->randomNumber(100000,600000));
+			//fun.push_back(area);
+			//return;
+
 
 			C2VSIM::WRITERS::writeDivSpec("d:/giorgk/Documents/GitHub/C2VsimCG/RunC2Vsim/tempSpec.dat", divData);
 			C2VSIM::WRITERS::writeDivData("d:/giorgk/Documents/GitHub/C2VsimCG/RunC2Vsim/tempData.dat", divData);

@@ -38,6 +38,8 @@ namespace NSGAII {
 		bool bUseModel = false;
 		bool bWriteHistory = false;
 		std::string XoverType;
+		bool useTabu = false;
+		double tabuThreshold;
 	};
 
 	bool readInputParameters(int argc, char* argv[], options& opt) {
@@ -87,6 +89,7 @@ namespace NSGAII {
 			("MutationProbability", po::value<double>(), "Mutation probability (default: 1/ProblemSize)")
 			("MaxGenerations", po::value<int>()->default_value(200), "Maximum number of generations")
 			("XoverType", po::value<std::string>(), "Crossover: ONECUT,TWOCUT,UNIREAL,UNIBIN,HEURISTIC")
+			("tabuThres", po::value<double>()->default_value(0.0), "Set tabu threshold to enable it")
 			;
 
 		if (vm_cmd.count("help")) {
@@ -139,6 +142,10 @@ namespace NSGAII {
 				opt.HistoryFile = vm_cfg["HistoryFile"].as<std::string>();
 				opt.bWriteHistory = true;
 			}
+
+			opt.tabuThreshold = vm_cfg["tabuThres"].as<double>();
+			if (opt.tabuThreshold > 0)
+				opt.useTabu = true;
 			
 			if (opt.populationType.compare("REAL") == 0) {
 				std::vector<std::string> temp = vm_cfg["LowerBound"].as<std::vector<std::string> >();

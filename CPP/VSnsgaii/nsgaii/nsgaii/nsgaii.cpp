@@ -22,6 +22,7 @@ NSGAII::SingletonRealGenerator* NSGAII::SingletonRealGenerator::_instance = null
 
 int main(int argc, char* argv[])
 {
+
 	boost::mpi::environment env;
 	boost::mpi::communicator world;
 	

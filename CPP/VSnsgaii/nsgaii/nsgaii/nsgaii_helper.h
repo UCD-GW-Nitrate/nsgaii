@@ -95,4 +95,13 @@ namespace NSGAII {
 			return static_cast<int>(r + 0.5);
 		}
 	};
+
+	long long convertBinaryToDecimal(std::vector<int>& v) {
+		long long n = 0;
+		for (unsigned int i = 0; i < v.size(); ++i) {
+			if (v[i]>0)
+				n += std::pow(2, i);
+		}
+		return n;
+	}
 }

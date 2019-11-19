@@ -95,8 +95,9 @@ namespace NSGAII {
 		std::vector<std::pair<int, int> > selectedParentIds;
 		void appendParetoSolutions();
 		int tournament();
+		std::list<std::vector<double> > tabuList;
+		bool isTabu(std::vector<double>& v);
 		std::ofstream historyfile;
-
 	};
 
 	Population::Population(NSGAII::options& opt)
@@ -107,27 +108,50 @@ namespace NSGAII {
 	void Population::initializePopulation() {
 		
 		NSGAII::SingletonRealGenerator* RG = RG->getInstance();
-		RG->printSeed();
+		//RG->printSeed();
 		//std::cout << "Initialize Population" << std::endl;
 		//std::map<int, std::vector<double> >::iterator it;
 		std::map<int, Individual>::iterator it;
 
 		for (int i = 0; i < options.PopulationSize; ++i) {
 			Individual individual;
-			for (int ivar = 0; ivar < options.ProblemSize; ++ivar) {
-				if (options.populationType.compare("REAL") == 0) {
-					individual.decisionVariables.push_back(RG->randomNumber(options.LowerBound[ivar], options.UpperBound[ivar]));
+			while (true) {
+				individual.decisionVariables.clear();
+				for (int ivar = 0; ivar < options.ProblemSize; ++ivar) {
+					if (options.populationType.compare("REAL") == 0) {
+						individual.decisionVariables.push_back(RG->randomNumber(options.LowerBound[ivar], options.UpperBound[ivar]));
+					}
+					else if (options.populationType.compare("BINARY") == 0)
+					{	
+						double test_r = static_cast<double>(i)/ options.PopulationSize;
+						if (i == 0)
+							test_r = -1;
+						else if (i == options.PopulationSize - 1)
+							test_r = 2;
+						double r = RG->randomNumber();
+						if (r > test_r)
+							individual.decisionVariables.push_back(1);
+						else
+							individual.decisionVariables.push_back(0);
+					}
 				}
-				else if (options.populationType.compare("BINARY") == 0)
-				{
-					double r = RG->randomNumber();
-					if (r > 0.5)
-						individual.decisionVariables.push_back(1);
-					else
-						individual.decisionVariables.push_back(0);
+				if (options.useTabu) {
+					if (!isTabu(individual.decisionVariables)) 
+						break;
+					else {
+						// The following applies only for the custom initial population implementation.
+						// If any of the previously generated individuals have all zero the code will
+						// loop forever as the last individual is forced to have all zeros
+						if (i == options.PopulationSize - 1) {
+							break;
+						}
+					}
 				}
+				else
+					break;
 			}
 			population.insert(std::pair<int, Individual>(i, individual));
+			tabuList.push_front(individual.decisionVariables);
 		}
 	}
 
@@ -362,7 +386,7 @@ namespace NSGAII {
 
 	void Population::crossOver() {
 		NSGAII::SingletonRealGenerator* RG = RG->getInstance();
-		RG->printSeed();
+		//RG->printSeed();
 
 		std::map<int, Individual>::iterator ita, itb;
 		std::vector<std::vector<double> > newPopulation;
@@ -400,7 +424,7 @@ namespace NSGAII {
 				for (int ivar = 0; ivar < options.ProblemSize; ++ivar) {
 					if (ivar <= cut1)
 						child.push_back(pa[ivar]);
-					else if (ivar > cut1 & ivar <= cut2){
+					else if ((ivar > cut1) & (ivar <= cut2)){
 						child.push_back(pb[ivar]);
 					}
 					else {
@@ -475,30 +499,44 @@ namespace NSGAII {
 		
 		std::map<int, Individual>::iterator it;
 		for (it = population.begin(); it != population.end(); ++it) {
-			for (unsigned int ivar = 0; ivar < it->second.decisionVariables.size(); ++ivar) {
-				double r = RG->randomNumber();
-				if (r < options.MutationProbability) {
-					if (binaryMutation) {
-						if (it->second.decisionVariables[ivar] > 0.5)
-							it->second.decisionVariables[ivar] = 0;
+			// make a copy of the individual and work on that
+			std::vector<double> individual_copy;
+			double mut_mult = 1;
+			while (true) {
+				individual_copy = it->second.decisionVariables;
+				for (unsigned int ivar = 0; ivar < individual_copy.size(); ++ivar) {
+					double r = RG->randomNumber();
+					if (r < options.MutationProbability* mut_mult) {
+						if (binaryMutation) {
+							if (individual_copy[ivar] > 0.5)
+								individual_copy[ivar] = 0;
+							else
+								individual_copy[ivar] = 1;
+						}
 						else
-							it->second.decisionVariables[ivar] = 1;
+							individual_copy[ivar] = RG->randomNumber(options.LowerBound[ivar], options.UpperBound[ivar]);
 					}
+
+					if (!binaryMutation) {
+						if (individual_copy[ivar] < options.LowerBound[ivar])
+							individual_copy[ivar] = options.LowerBound[ivar];
+						if (individual_copy[ivar] > options.UpperBound[ivar])
+							individual_copy[ivar] = options.UpperBound[ivar];
+					}
+				}
+				if (options.useTabu) {
+					if (isTabu(individual_copy))
+						mut_mult = mut_mult * 1.5;
 					else
-						it->second.decisionVariables[ivar] = RG->randomNumber(options.LowerBound[ivar], options.UpperBound[ivar]);
-				}
+						break;
 
-				if (!binaryMutation) {
-					if (it->second.decisionVariables[ivar] < options.LowerBound[ivar])
-						it->second.decisionVariables[ivar] = options.LowerBound[ivar];
-					if (it->second.decisionVariables[ivar] > options.UpperBound[ivar])
-						it->second.decisionVariables[ivar] = options.UpperBound[ivar];
-				}
+				}	
+				else
+					break;
 			}
-		}
-		
-
-		
+			it->second.decisionVariables = individual_copy;
+			tabuList.push_front(individual_copy);
+		}	
 	}
 
 	void Population::appendParetoSolutions() {
@@ -561,5 +599,24 @@ namespace NSGAII {
 			}
 			historyfile << std::endl;
 		}
+	}
+
+	bool Population::isTabu(std::vector<double>& v) {
+		bool exists = false;
+		std::list<std::vector<double> >::iterator it;
+		for (it = tabuList.begin(); it != tabuList.end(); ++it){
+			double d = 0;
+			for (unsigned int j = 0; j < it->size(); ++j) {
+				d += std::abs(it->at(j) - v[j]);
+				if (d > options.tabuThreshold)
+					break;
+			}
+			if (d < options.tabuThreshold) {
+				std::cout << "Hey I found one here" << std::endl;
+				exists = true;
+				break;
+			}
+		}
+		return exists;
 	}
 }
