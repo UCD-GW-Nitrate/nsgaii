@@ -20,3 +20,8 @@
 !CPP/VSnsgaii/nsgaii/nsgaii/*.h
 !CPP/VSnsgaii/nsgaii/nsgaii/nsgaii.vcxproj
 !CPP/VSnsgaii/nsgaii/nsgaii/nsgaii.vcxproj.filters
+#
+!/Rnsgaii
+/Rnsgaii/*
+!/Rnsgaii/*.R
+!/Rnsgaii/*.Rproj
