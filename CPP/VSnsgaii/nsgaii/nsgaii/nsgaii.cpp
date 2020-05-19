@@ -5,11 +5,13 @@
 #include <boost/mpi.hpp>
 #include <boost/mpi/environment.hpp>
 #include <boost/mpi/communicator.hpp>
+#include <boost/filesystem.hpp>
 //#include <random>
 //#include <chrono>
+#include <boost/random/mersenne_twister.hpp>
+#include <boost/random/uniform_int_distribution.hpp>
 #include <boost/timer/timer.hpp>
 #include <boost/chrono.hpp>
-#include <boost/filesystem.hpp>
 
 #include "nsgaii_options.h"
 #include "nsgaii_core.h"
@@ -155,8 +157,6 @@ int main(int argc, char* argv[])
 						}
 					}
 				}
-
-
 			}
 			else {
 				int id = -9;

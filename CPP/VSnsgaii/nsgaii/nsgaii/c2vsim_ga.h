@@ -222,6 +222,7 @@ namespace C2VSIM {
 			fun.clear();
 			fun.push_back(-envOF);
 			fun.push_back(costOF);
+			boost::filesystem::current_path(main_dir);
 		}
 
 		void maxWTminArea(std::vector<double>& var, std::vector<double>& fun, C2VSIM::c2vsimData& cvd) {
