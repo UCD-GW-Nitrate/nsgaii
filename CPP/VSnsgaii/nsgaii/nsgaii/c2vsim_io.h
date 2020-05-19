@@ -11,7 +11,8 @@ namespace po = boost::program_options;
 namespace C2VSIM {
 
 	struct ElemInfo {
-		double area;
+		double price = 0.0;
+		double area = 0.0;
 	};
 
 	struct Diversion {
@@ -580,6 +581,7 @@ namespace C2VSIM {
 			elfile >> Nelem;
 			for (int i = 0; i < Nelem; ++i) {
 				elfile >> id;
+				elfile >> v.price;
 				elfile >> v.area;
 				elemInfoMap[id] = v;
 			}

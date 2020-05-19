@@ -123,11 +123,12 @@ namespace NSGAII {
 					}
 					else if (options.populationType.compare("BINARY") == 0)
 					{	
-						double test_r = static_cast<double>(i)/ options.PopulationSize;
-						if (i == 0)
-							test_r = -1;
-						else if (i == options.PopulationSize - 1)
-							test_r = 2;
+						double test_r = 0.5;
+						//double test_r = static_cast<double>(i)/ options.PopulationSize;
+						//if (i == 0)
+						//	test_r = -1;
+						//else if (i == options.PopulationSize - 1)
+						//	test_r = 2;
 						double r = RG->randomNumber();
 						if (r > test_r)
 							individual.decisionVariables.push_back(1);
