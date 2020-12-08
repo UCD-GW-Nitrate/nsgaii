@@ -1,9 +1,9 @@
 PopulationType=BINARY
 OutputFile=f:\UCDAVIS\nsgaii\CPP\paretoSolutions.dat
 HistoryFile=f:\UCDAVIS\nsgaii\CPP\paretoHistory.dat
-ProblemSize=165
+ProblemSize=258
 Nobjectives=2
-PopulationSize=200
+PopulationSize=256
 LowerBound=0
 UpperBound=1
 TournamentSize=4

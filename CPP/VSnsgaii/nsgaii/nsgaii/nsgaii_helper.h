@@ -53,8 +53,9 @@ namespace NSGAII {
 
 		// private constructor
 		SingletonRealGenerator() {
-			//seed = std::chrono::system_clock::now().time_since_epoch().count();
-			generator.seed(std::time(0));
+			//generator.seed(std::time(0));
+			seed = std::chrono::system_clock::now().time_since_epoch().count();
+			generator.seed(seed);
 		}
 
 		boost::random::uniform_real_distribution<double> uniformDistribution;

@@ -61,6 +61,10 @@ namespace NSGAII {
 			else if (rank.accum == other.rank.accum)
 				return 1;
 		}
+		// I put return here to surpress warnings.
+		// However the code should never reach that point
+		std::cerr << "The comparison between 2 individualts is not succesfull" << std::endl;
+		return 1;
 	}
 
 
@@ -244,7 +248,7 @@ namespace NSGAII {
 				}
 				
 				std::sort(f.begin(), f.end());
-				for (unsigned int i = 0; i < f.size(); ++i) {
+				for (int i = 0; i < static_cast<int>(f.size()); ++i) {
 					if (i == 0 || i == f.size() - 1) {
 						a[f[i].second] = -1.0;
 					}

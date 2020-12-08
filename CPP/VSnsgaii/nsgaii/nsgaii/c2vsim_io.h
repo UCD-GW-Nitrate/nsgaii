@@ -9,10 +9,17 @@
 namespace po = boost::program_options;
 
 namespace C2VSIM {
+	struct DTSdata {
+		std::vector<double> TS;
+		double max;
+		double Total;
+	};
 
 	struct ElemInfo {
-		double price = 0.0;
 		double area = 0.0;
+		double p_land = 0.0;
+		double x_lift = 0.0;
+		double x_distance = 0.0;
 	};
 
 	struct Diversion {
@@ -506,7 +513,7 @@ namespace C2VSIM {
 			return true;
 		}
 
-		bool readDivTimeSeries(std::string filename, std::map<int, std::vector<double> >& DTS) {
+		bool readDivTimeSeries(std::string filename, std::map<int, DTSdata >& DTS, int startDivStep) {
 			std::ifstream dtsfile;
 			dtsfile.open(filename);
 			if (!dtsfile.is_open()) {
@@ -523,16 +530,24 @@ namespace C2VSIM {
 			ss >> Nsteps;
 			double x;
 			for (int i = 0; i < Ndivs; ++i) {
+				DTSdata dts;
 				std::getline(dtsfile, temp);
 				ss.clear();
 				ss.str(temp);
 				std::vector<double> Xv;
 				ss >> id;
+				dts.max = 0;
+				dts.Total = 0;
 				for (int j = 0; j < Nsteps; ++j) {
 					ss >> x;
-					Xv.push_back(x);
+					dts.TS.push_back(x);
+					if (j >= startDivStep) {
+						dts.Total += x;
+						if (x > dts.max)
+							dts.max = x;
+					}
 				}
-				DTS.insert(std::pair<int, std::vector<double > >(id, Xv));
+				DTS.insert(std::pair<int, DTSdata >(id, dts));
 			}
 			dtsfile.close();
 			return true;
@@ -581,8 +596,10 @@ namespace C2VSIM {
 			elfile >> Nelem;
 			for (int i = 0; i < Nelem; ++i) {
 				elfile >> id;
-				elfile >> v.price;
 				elfile >> v.area;
+				elfile >> v.p_land;
+				elfile >> v.x_distance;
+				elfile >> v.x_lift;
 				elemInfoMap[id] = v;
 			}
 			elfile.close();
@@ -648,6 +665,7 @@ namespace C2VSIM {
 	namespace OPTIONS {
 		struct options {
 			int Nsteps = 1056;
+			int StartDivStep = 528;
 			std::string divSpecFile; 
 			std::string divDataFile;
 			std::string divElemFile;
@@ -657,6 +675,10 @@ namespace C2VSIM {
 			std::string ElementInfofile;
 			std::string SimulationExe;
 			std::string BudgetExe;
+			std::string SimulationPath;
+			std::string BudgetOutputFile;
+			std::string DivSpecOpt;
+			std::string DivDataOpt;
 		};
 
 		bool readConfigFile(int argc, char* argv[], C2VSIM::OPTIONS::options& opt) {
@@ -673,6 +695,7 @@ namespace C2VSIM {
 			po::options_description config_options("Configuration file options");
 			config_options.add_options()
 				("Nsteps", po::value<int>()->default_value(1056), "Number of monthly steps")
+				("StartDivStep", po::value<int>()->default_value(528), "The step to start diversion operations")
 				("divSpecFile", po::value<std::string>(), "Diversion Specification file from C2Vsim")
 				("divDataFile", po::value<std::string>(), "Diversion Data file from C2Vsim")
 				("divElemFile", po::value<std::string>(), "File with the elements to recieve diversions")
@@ -682,6 +705,10 @@ namespace C2VSIM {
 				("SimulationExe", po::value<std::string>(), "Path including the simulation executable")
 				("BudgetExe", po::value<std::string>(), "Path including the budget executable")
 				("BaseGWbudFile", po::value<std::string>(), "Groundwater Storage for the base scenario")
+				("SimulationPath", po::value<std::string>(), "The path where the simulation input file is")
+				("DivSpecOpt", po::value<std::string>(), "Diversion specification file during optimization")
+				("DivDataOpt", po::value<std::string>(), "Diversion specification file during optimization")
+				("BudgetOutputFile", po::value<std::string>(), "The name of the output budget file name which will be used for the objective function")
 				;
 
 			if (vm_cmd.count("help")) {
@@ -702,6 +729,7 @@ namespace C2VSIM {
 				po::store(po::parse_config_file<char>(vm_cmd["model"].as<std::string>().c_str(), config_options), vm_cfg);
 
 				opt.Nsteps = vm_cfg["Nsteps"].as<int>();
+				opt.StartDivStep = vm_cfg["StartDivStep"].as<int>();
 				opt.divSpecFile = vm_cfg["divSpecFile"].as<std::string>();
 				opt.divDataFile = vm_cfg["divDataFile"].as<std::string>();
 				opt.divElemFile = vm_cfg["divElemFile"].as<std::string>();
@@ -711,6 +739,10 @@ namespace C2VSIM {
 				opt.SimulationExe = vm_cfg["SimulationExe"].as<std::string>();
 				opt.BudgetExe = vm_cfg["BudgetExe"].as<std::string>();
 				opt.BaseGWbudFile = vm_cfg["BaseGWbudFile"].as<std::string>();
+				opt.SimulationPath = vm_cfg["SimulationPath"].as<std::string>();
+				opt.BudgetOutputFile = vm_cfg["BudgetOutputFile"].as<std::string>();
+				opt.DivSpecOpt = vm_cfg["DivSpecOpt"].as<std::string>();
+				opt.DivDataOpt = vm_cfg["DivDataOpt"].as<std::string>();
 			}
 			return true;
 		}

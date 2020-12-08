@@ -11,6 +11,44 @@
 #include "nsgaii_core.h"
 
 namespace C2VSIM {
+
+	struct COST {
+		COST() {
+			Land = 0;
+			Capital = 0;
+			Water = 0;
+			Lift = 0;
+			Conveyance = 0;
+		}
+		double Land;
+		double Capital;
+		double Water;
+		double Lift;
+		double Conveyance;
+		double Total() {
+			return Land + Capital + Water + Lift + Conveyance;
+		}
+		void setCost(double pland, double maxQ, double totQ, double x_lift, double x_distance) {
+			Land = pland * (maxQ*1000.0 / 75);
+			Capital = 5000 * (maxQ*1000.0 / 75);
+			Water = 0;
+			Lift = std::abs(0.17 * 1.45 * x_lift * totQ);
+			Conveyance = 0.02 * x_distance * totQ;
+		}
+		COST operator+(const COST& a) const {
+			COST b;
+			b.Land = Land + a.Land;
+			b.Capital = Capital + a.Capital;
+			b.Water = Water + a.Water;
+			b.Lift = Lift + a.Lift;
+			b.Conveyance = Conveyance + a.Conveyance;
+
+			return b;
+		}
+	};
+
+
+
 	class c2vsimData {
 	public:
 		c2vsimData(C2VSIM::OPTIONS::options& opt);
@@ -19,10 +57,14 @@ namespace C2VSIM {
 		// For a given location in the encoding return the diversion node and the element 
 		bool getNodeElemId(unsigned int i, int& node, int& elem);
 		C2VSIM::DiversionData getDiversionData();
-		std::vector<double> getDTS(int node);
+		void getDTS(int node, std::vector<double>& TS, double& maxq, double& totq);
 		ElemInfo getValue(int elemId);
 		std::string simulationExe();
 		std::string budgetExe();
+		std::string simulationPath() {return options.SimulationPath; }
+		std::string BudgetOutputFile() { return options.BudgetOutputFile; }
+		std::string DivSpecOpt() { return options.DivSpecOpt; }
+		std::string DivDataOpt() { return options.DivDataOpt; }
 		std::vector<double> GWHbaseValue(int node);
 		int nsteps();
 		double calcStorageChange(C2VSIM::GWbudTimeSeries& newGWBUB);
@@ -32,7 +74,7 @@ namespace C2VSIM {
 		std::map<int, std::vector<int> > divElem;
 		std::map<int, int> ElemDiv;
 		std::map<int, int> idElem;
-		std::map<int, std::vector<double> > DTS;
+		std::map<int, DTSdata > DTS;
 		C2VSIM::DiversionData divData;
 		C2VSIM::GWbudTimeSeries GWBUD;
 		std::map<int, std::vector<double> > GWH;
@@ -49,7 +91,7 @@ namespace C2VSIM {
 	void c2vsimData::readInputFiles() {
 		C2VSIM::READERS::readDivElems(options.divElemFile, divElem);
 		makeElemDiv();
-		C2VSIM::READERS::readDivTimeSeries(options.divTimeSeriesFile, DTS);
+		C2VSIM::READERS::readDivTimeSeries(options.divTimeSeriesFile, DTS, options.StartDivStep);
 		C2VSIM::READERS::readDivSpec(options.divSpecFile, divData);
 		C2VSIM::READERS::readDivData(options.divDataFile, divData, 1056);
 		C2VSIM::READERS::readGWHydOut(options.BaseWTfile, GWH, options.Nsteps);
@@ -106,12 +148,13 @@ namespace C2VSIM {
 		return divData;
 	}
 
-	std::vector<double> c2vsimData::getDTS(int node) {
-		std::map<int, std::vector<double> >::iterator it = DTS.find(node);
-		if (it != DTS.end())
-			return it->second;
-		else
-			return std::vector<double>();
+	void c2vsimData::getDTS(int node, std::vector<double>& TS, double& maxq, double& totq) {
+		std::map<int, DTSdata >::iterator it = DTS.find(node);
+		if (it != DTS.end()) {
+			TS = it->second.TS;
+			maxq = it->second.max;
+			totq = it->second.Total;
+		}
 	}
 
 	ElemInfo c2vsimData::getValue(int elemId) {
@@ -136,11 +179,13 @@ namespace C2VSIM {
 	}
 
 	std::vector<double> c2vsimData::GWHbaseValue(int node) {
+		// This code is not currently in use but if we used it then we have to make
+		// sure that it will work if returns an empty vector
 		std::map<int, std::vector<double> >::iterator it = GWH.find(node);
 		if (it != GWH.end())
 			return it->second;
 		else
-			std::vector<double>();
+			return std::vector<double>();
 	}
 
 	void c2vsimData::debugMsg() {
@@ -172,9 +217,12 @@ namespace C2VSIM {
 
 			// get a copy of the existing diversion data
 			C2VSIM::DiversionData divData = cvd.getDiversionData();
-			double costValue = 0;
+			COST Totalcost;
 			for (it = nodeElemMap.begin(); it != nodeElemMap.end(); ++it) {
-				std::vector<double> TS = cvd.getDTS(it->first);
+				std::vector<double> TS;
+				double maxq = 0;
+				double totq = 0;
+				cvd.getDTS(it->first, TS, maxq, totq);
 				C2VSIM::Diversion div;
 				div.IRDV = it->first;
 				div.ICDVMAX = 265;
@@ -188,22 +236,24 @@ namespace C2VSIM {
 				div.ICADJ = 1;
 				div.IERELS = it->second;
 				for (unsigned int i = 0; i < it->second.size(); ++i) {
+					COST cost;
 					ElemInfo v = cvd.getValue(it->second[i]);
-					costValue += v.price;
-					div.FERELS.push_back(v.area);
+					cost.setCost(v.p_land, maxq / static_cast<double>(it->second.size()) , totq, v.x_lift, v.x_distance);
+					div.FERELS.push_back(1);
+					Totalcost = Totalcost + cost;
 				}
 				divData.appendDiversion(div, TS);
 			}
 
-			C2VSIM::WRITERS::writeDivSpec("f:/UCDAVIS/C2VsimCG/RunC2Vsim/tempSpec.dat", divData);
-			C2VSIM::WRITERS::writeDivData("f:/UCDAVIS/C2VsimCG/RunC2Vsim/tempData.dat", divData);
-			return costValue;
+			C2VSIM::WRITERS::writeDivSpec(cvd.DivSpecOpt(), divData);
+			C2VSIM::WRITERS::writeDivData(cvd.DivDataOpt(), divData);
+			return Totalcost.Total()/1000000;
 		}
 
 		void maxGWSTminCost(std::vector<double>& var, std::vector<double>& fun, C2VSIM::c2vsimData& cvd) {
 			std::string main_dir = boost::filesystem::current_path().string();
 			// Enter into the simulation path
-			boost::filesystem::current_path("f:/UCDAVIS/C2VsimCG/RunC2Vsim");
+			boost::filesystem::current_path(cvd.simulationPath());
 			std::cout << boost::filesystem::current_path() << std::endl;
 
 			double costOF = setupInputFiles(var, cvd);
@@ -217,7 +267,7 @@ namespace C2VSIM {
 			system(bud_command.c_str());
 
 			C2VSIM::GWbudTimeSeries simGBbud;
-			C2VSIM::READERS::readGWBud("f:/UCDAVIS/C2VsimCG/RunC2Vsim/Results/CVground.BUD", simGBbud, cvd.nsteps());
+			C2VSIM::READERS::readGWBud(cvd.BudgetOutputFile(), simGBbud, cvd.nsteps());
 			double envOF = cvd.calcStorageChange(simGBbud);
 			fun.clear();
 			fun.push_back(-envOF);
