@@ -1,5 +1,5 @@
-function ParetoSolutions = readCppOutputFile(filename)
-ParetoSolutions.x = []
+function ParetoSolutions = readNSGAIIOutputFile(filename)
+ParetoSolutions.x = [];
 ParetoSolutions.f = [];
 fid = fopen(filename,'r');
 C = textscan(fid, '%d %d %d\n');

@@ -25,7 +25,7 @@ NSGAII::SingletonRealGenerator* NSGAII::SingletonRealGenerator::_instance = null
 int main(int argc, char* argv[])
 {
 
-	boost::mpi::environment env;
+	boost::mpi::environment env(argc, argv);
 	boost::mpi::communicator world;
 	
 	NSGAII::SingletonRealGenerator *RG = RG->getInstance();
@@ -72,6 +72,7 @@ int main(int argc, char* argv[])
 			pop.openHistoryFile();
 		//pop.printPopulation();
 	}
+	world.barrier();
 
 	int currentGeneration = 0;
 	while (currentGeneration < opt.MaxGenerations) {

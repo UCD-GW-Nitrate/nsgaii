@@ -81,6 +81,7 @@ namespace C2VSIM {
 		std::map<int, ElemInfo> elemInfoMap;
 
 		void makeElemDiv();
+		void printElementMapping();
 	};
 
 	c2vsimData::c2vsimData(C2VSIM::OPTIONS::options& opt)
@@ -91,6 +92,7 @@ namespace C2VSIM {
 	void c2vsimData::readInputFiles() {
 		C2VSIM::READERS::readDivElems(options.divElemFile, divElem);
 		makeElemDiv();
+		printElementMapping();
 		C2VSIM::READERS::readDivTimeSeries(options.divTimeSeriesFile, DTS, options.StartDivStep);
 		C2VSIM::READERS::readDivSpec(options.divSpecFile, divData);
 		C2VSIM::READERS::readDivData(options.divDataFile, divData, 1056);
@@ -108,6 +110,16 @@ namespace C2VSIM {
 				idElem.insert(std::pair<int, int>(cnt++, it->second[i]));
 			}
 		}
+	}
+	void c2vsimData::printElementMapping() {
+		std::map<int, int >::iterator it, it1;
+		std::ofstream outfile;
+		outfile.open(options.ElemMapFile);
+		for (it = idElem.begin(); it != idElem.end(); ++it) {
+			it1 = ElemDiv.find(it->second);
+			outfile << it->first << " " << it->second << " " << it1->second << std::endl;
+		}
+		outfile.close();
 	}
 
 	bool c2vsimData::getNodeElemId(unsigned int i, int& node, int& elem) {

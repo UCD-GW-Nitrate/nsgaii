@@ -679,6 +679,7 @@ namespace C2VSIM {
 			std::string BudgetOutputFile;
 			std::string DivSpecOpt;
 			std::string DivDataOpt;
+			std::string ElemMapFile;
 		};
 
 		bool readConfigFile(int argc, char* argv[], C2VSIM::OPTIONS::options& opt) {
@@ -709,6 +710,7 @@ namespace C2VSIM {
 				("DivSpecOpt", po::value<std::string>(), "Diversion specification file during optimization")
 				("DivDataOpt", po::value<std::string>(), "Diversion specification file during optimization")
 				("BudgetOutputFile", po::value<std::string>(), "The name of the output budget file name which will be used for the objective function")
+				("ElemMapFile", po::value<std::string>(), "The name of the element mapping file")
 				;
 
 			if (vm_cmd.count("help")) {
@@ -743,6 +745,7 @@ namespace C2VSIM {
 				opt.BudgetOutputFile = vm_cfg["BudgetOutputFile"].as<std::string>();
 				opt.DivSpecOpt = vm_cfg["DivSpecOpt"].as<std::string>();
 				opt.DivDataOpt = vm_cfg["DivDataOpt"].as<std::string>();
+				opt.ElemMapFile = vm_cfg["ElemMapFile"].as<std::string>();
 			}
 			return true;
 		}
