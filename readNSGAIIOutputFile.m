@@ -2,26 +2,20 @@ function ParetoSolutions = readNSGAIIOutputFile(filename)
 ParetoSolutions.x = [];
 ParetoSolutions.f = [];
 fid = fopen(filename,'r');
-C = textscan(fid, '%d %d %d\n');
-frmVar = [];
-for ii = 1:double(C{2})
-    frmVar = [frmVar '%f '];
-end
-frmVar = [frmVar '\n'];
-
-frmObj = [];
-for ii = 1:double(C{3})
-    frmObj = [frmObj '%f '];
-end
-frmObj = [frmObj '\n'];
-
-for ii = 1:double(C{1})
-    V = cell2mat(textscan(fid, frmVar,  1));
-    ParetoSolutions.x = [ParetoSolutions.x; V]; 
+C = textscan(fid, '%f',3);
+Nsol = C{1}(1);
+Nvar = C{1}(2);
+Nobj = C{1}(3);
+ParetoSolutions.x = nan(Nsol, Nvar);
+ParetoSolutions.f = nan(Nsol, Nobj);
+% read Desicion variables 
+for ii = 1:Nsol
+    tmp = textscan(fid, '%f',258);
+    ParetoSolutions.x(ii,:) = tmp{1,1}';
 end
 
-for ii = 1:double(C{1})
-    V = cell2mat(textscan(fid, frmObj,  1));
-    ParetoSolutions.f = [ParetoSolutions.f; V]; 
+for ii = 1:Nsol
+    tmp = textscan(fid, '%f',Nobj);
+    ParetoSolutions.f(ii,:) = tmp{1,1}';
 end
 fclose(fid);
