@@ -32,8 +32,8 @@ namespace C2VSIM {
 			Land = pland * (maxQ*1000.0 / 75);
 			Capital = 5000 * (maxQ*1000.0 / 75);
 			Water = 0;
-			Lift = std::abs(0.17 * 1.45 * x_lift * totQ);
-			Conveyance = 0.02 * x_distance * totQ;
+			Lift = std::abs(0.17 * 1.45 * x_lift * totQ*1000);
+			Conveyance = 0.02 * x_distance * totQ*1000;
 		}
 		COST operator+(const COST& a) const {
 			COST b;
@@ -247,10 +247,11 @@ namespace C2VSIM {
 				div.ICFSIRIG = 1;
 				div.ICADJ = 1;
 				div.IERELS = it->second;
+				double NreceivElem = static_cast<double>(it->second.size());
 				for (unsigned int i = 0; i < it->second.size(); ++i) {
 					COST cost;
 					ElemInfo v = cvd.getValue(it->second[i]);
-					cost.setCost(v.p_land, maxq / static_cast<double>(it->second.size()) , totq, v.x_lift, v.x_distance);
+					cost.setCost(v.p_land, maxq / NreceivElem, totq / NreceivElem, v.x_lift, v.x_distance);
 					div.FERELS.push_back(1);
 					Totalcost = Totalcost + cost;
 				}
