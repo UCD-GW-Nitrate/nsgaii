@@ -264,6 +264,8 @@ namespace C2VSIM {
 		}
 
 		void maxGWSTminCost(std::vector<double>& var, std::vector<double>& fun, C2VSIM::c2vsimData& cvd) {
+			//std::vector<double> tmp = { 0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,1,0,1,0,1,0,1,1,1,1,0,1,0,0,1,0,1,1,1,0,1,1,0,0,0,1,1,0,0,0,0,0,1,1,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,1,1,1,1,1,0,0,0,1,1,0,0,0,0,0,0,0,1,1,1,1,1,0,0,0,1,0,0,0,0,0,0,0,0,0,1,0,0,1,1,1,1,0,0,0,0,0,0,1,1,1,0,0,0,1,1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,1,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0,0,0,0,0 };
+			//var = tmp;
 			std::string main_dir = boost::filesystem::current_path().string();
 			// Enter into the simulation path
 			boost::filesystem::current_path(cvd.simulationPath());
@@ -273,15 +275,29 @@ namespace C2VSIM {
 
 			std::string sim_command = cvd.simulationExe();
 			sim_command.append(" CVsim.in");
-			system(sim_command.c_str());
+			int sys = system(sim_command.c_str());
+			if (!boost::filesystem::exists("Results/CVground.bin")) {
+				fun.clear();
+				fun.push_back(-10000000);
+				fun.push_back(10000000);
+				return;
+			}
 
 			std::string bud_command = cvd.budgetExe();
 			bud_command.append(" CVBudget.in");
-			system(bud_command.c_str());
+			sys = system(bud_command.c_str());
+			if (!boost::filesystem::exists("Results/CVground.BUD")) {
+				fun.clear();
+				fun.push_back(-10000000);
+				fun.push_back(10000000);
+				return;
+			}
 
 			C2VSIM::GWbudTimeSeries simGBbud;
 			C2VSIM::READERS::readGWBud(cvd.BudgetOutputFile(), simGBbud, cvd.nsteps());
 			double envOF = cvd.calcStorageChange(simGBbud);
+			boost::filesystem::remove("Results/CVground.bin");
+			boost::filesystem::remove("Results/CVground.BUD");
 			fun.clear();
 			fun.push_back(-envOF);
 			fun.push_back(costOF);
