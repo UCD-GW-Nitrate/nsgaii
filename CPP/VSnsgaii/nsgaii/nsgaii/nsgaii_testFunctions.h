@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <cmath>
+//#include <unistd.h>
 
 namespace NSGAII {
 	const double invsq3 = 1 / std::sqrt(3.0);
@@ -17,6 +18,7 @@ namespace NSGAII {
 	}
 
 	void Kursawe(std::vector<double>& var, std::vector<double>& fun) {
+        //sleep(5);
 		//std::cout << "x=[" << var[0] << ";" << var[1] << ";" << var[2] << "]" << std::endl;
 		double a = 0;
 		double b = 0;

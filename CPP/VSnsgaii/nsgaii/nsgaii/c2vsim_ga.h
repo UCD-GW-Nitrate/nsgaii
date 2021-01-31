@@ -291,6 +291,9 @@ namespace C2VSIM {
 #endif
             double costOF = setupInputFiles(var, cvd);
 
+            if (!system(NULL))
+                std::cout << "Rank: " << rank << " System not ready" << std::endl;
+
 			int sys = system(sim_command.c_str());
 			if (!boost::filesystem::exists("Results/CVground.bin")) {
                 std::cout << "Rank: " << rank << " Can't find the CVground.bin file" << std::endl;
