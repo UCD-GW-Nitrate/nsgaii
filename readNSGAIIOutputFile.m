@@ -10,7 +10,7 @@ ParetoSolutions.x = nan(Nsol, Nvar);
 ParetoSolutions.f = nan(Nsol, Nobj);
 % read Desicion variables 
 for ii = 1:Nsol
-    tmp = textscan(fid, '%f',258);
+    tmp = textscan(fid, '%f',Nvar);
     ParetoSolutions.x(ii,:) = tmp{1,1}';
 end
 

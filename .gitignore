@@ -3,6 +3,7 @@
 !/CPP
 /CPP/*
 !/CPP/*.dat
+!/CPP/*.ini
 !CPP/nsgaii
 /CPP/nsgaii/*
 !CPP/nsgaii/*.cpp
@@ -25,3 +26,8 @@
 /Rnsgaii/*
 !/Rnsgaii/*.R
 !/Rnsgaii/*.Rproj
+#
+!/Examples
+/Examples/*
+!/Examples/*.ini
+!/Examples/*.md

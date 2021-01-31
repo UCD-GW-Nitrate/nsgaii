@@ -1,4 +1,8 @@
-#pragma once
+#ifndef C2VSIM_GA_H
+#define C2VSIM_GA_H
+
+#define AQUA true
+
 #include <map>
 #include <vector>
 #include <string>
@@ -6,9 +10,9 @@
 #include <boost/filesystem.hpp>
 
 #include "c2vsim_io.h"
-#include "nsgaii_options.h"
-#include "nsgaii_helper.h"
-#include "nsgaii_core.h"
+//#include "nsgaii_options.h"
+//#include "nsgaii_helper.h"
+//#include "nsgaii_core.h"
 
 namespace C2VSIM {
 
@@ -263,38 +267,64 @@ namespace C2VSIM {
 			return Totalcost.Total()/1000000;
 		}
 
-		void maxGWSTminCost(std::vector<double>& var, std::vector<double>& fun, C2VSIM::c2vsimData& cvd) {
-			//std::vector<double> tmp = { 0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,1,0,1,0,1,0,1,1,1,1,0,1,0,0,1,0,1,1,1,0,1,1,0,0,0,1,1,0,0,0,0,0,1,1,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,1,1,1,1,1,0,0,0,1,1,0,0,0,0,0,0,0,1,1,1,1,1,0,0,0,1,0,0,0,0,0,0,0,0,0,1,0,0,1,1,1,1,0,0,0,0,0,0,1,1,1,0,0,0,1,1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,1,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0,0,0,0,0 };
-			//var = tmp;
-			std::string main_dir = boost::filesystem::current_path().string();
-			// Enter into the simulation path
+		void maxGWSTminCost(std::vector<double>& var, std::vector<double>& fun, C2VSIM::c2vsimData& cvd, int rank) {
+#if AQUA
+            // make sure these files do not exists
+            boost::filesystem::remove("Results/CVground.bin");
+            boost::filesystem::remove("Results/CVground.BUD");
+            // keep the main path
+            std::string main_dir = "/nfs/aqua-z0/giorgk/nsgaii";
+            std::string run_dir = main_dir + "/RUNS/RUN";
+            run_dir.append(std::to_string(rank));
+            // Enter into the simulation path
+            boost::filesystem::current_path(run_dir);
+            //std::cout << "Rank: " << rank << boost::filesystem::current_path() << std::endl;
+            std::string sim_command = "/opt/wine-stable/bin/wine ";
+            sim_command.append(cvd.simulationExe()).append(" CVsimAqua.in >/dev/null");
+#else
+            std::string main_dir = boost::filesystem::current_path().string();
+            // Enter into the simulation path
 			boost::filesystem::current_path(cvd.simulationPath());
 			std::cout << boost::filesystem::current_path() << std::endl;
-
-			double costOF = setupInputFiles(var, cvd);
-
 			std::string sim_command = cvd.simulationExe();
 			sim_command.append(" CVsim.in");
+#endif
+            double costOF = setupInputFiles(var, cvd);
+
 			int sys = system(sim_command.c_str());
 			if (!boost::filesystem::exists("Results/CVground.bin")) {
+                std::cout << "Rank: " << rank << " Can't find the CVground.bin file" << std::endl;
 				fun.clear();
-				fun.push_back(-10000000);
 				fun.push_back(10000000);
+				fun.push_back(10000000);
+                boost::filesystem::current_path(main_dir);
 				return;
 			}
 
-			std::string bud_command = cvd.budgetExe();
+#if AQUA
+            std::string bud_command = "/opt/wine-stable/bin/wine ";
+            bud_command.append(cvd.budgetExe()).append(" CVBudgetAqua.in >/dev/null"); //
+#else
+            std::string bud_command = cvd.budgetExe();
 			bud_command.append(" CVBudget.in");
+#endif
+
 			sys = system(bud_command.c_str());
 			if (!boost::filesystem::exists("Results/CVground.BUD")) {
+                std::cout << "Rank: " << rank << " Can't find the CVground.BUD file" << std::endl;
 				fun.clear();
-				fun.push_back(-10000000);
 				fun.push_back(10000000);
+				fun.push_back(10000000);
+                boost::filesystem::current_path(main_dir);
 				return;
 			}
 
 			C2VSIM::GWbudTimeSeries simGBbud;
+#if AQUA
+            C2VSIM::READERS::readGWBud("Results/CVground.BUD", simGBbud, cvd.nsteps());
+#elif
 			C2VSIM::READERS::readGWBud(cvd.BudgetOutputFile(), simGBbud, cvd.nsteps());
+#endif
 			double envOF = cvd.calcStorageChange(simGBbud);
 			boost::filesystem::remove("Results/CVground.bin");
 			boost::filesystem::remove("Results/CVground.BUD");
@@ -304,9 +334,9 @@ namespace C2VSIM {
 			boost::filesystem::current_path(main_dir);
 		}
 
-		void maxWTminArea(std::vector<double>& var, std::vector<double>& fun, C2VSIM::c2vsimData& cvd) {
+		/*void maxWTminArea(std::vector<double>& var, std::vector<double>& fun, C2VSIM::c2vsimData& cvd) {
 			NSGAII::SingletonRealGenerator* RG = RG->getInstance();
-			/*
+			*//*
 			// find the diversion nodes and the elements to apply the water
 			std::map<int, std::vector<int> > nodeElemMap;
 			std::map<int, std::vector<int> >::iterator it;
@@ -358,7 +388,7 @@ namespace C2VSIM {
 			//return;
 			C2VSIM::WRITERS::writeDivSpec("d:/giorgk/Documents/GitHub/C2VsimCG/RunC2Vsim/tempSpec.dat", divData);
 			C2VSIM::WRITERS::writeDivData("d:/giorgk/Documents/GitHub/C2VsimCG/RunC2Vsim/tempData.dat", divData);
-			*/
+			*//*
 			double costOF = setupInputFiles(var, cvd);
 
 			std::string main_dir = boost::filesystem::current_path().string();
@@ -443,6 +473,8 @@ namespace C2VSIM {
 			fun.clear();
 			fun.push_back(-fp);
 			fun.push_back(costOF);
-		}
+		}*/
 	}
 }
+
+#endif // C2VSIM_GA_H

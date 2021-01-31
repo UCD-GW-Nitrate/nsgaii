@@ -1,4 +1,5 @@
-#pragma once
+#ifndef NSGAII_OPTIONS_H
+#define NSGAII_OPTIONS_H
 
 #include <iostream>
 #include <boost/program_options.hpp>
@@ -40,6 +41,10 @@ namespace NSGAII {
 		std::string XoverType;
 		bool useTabu = false;
 		double tabuThreshold;
+		bool bResumeOptimization = false;
+		bool bPrintRestartFile = false;
+		std::string RestartOutFile;
+		std::string RestartInFile;
 	};
 
 	bool readInputParameters(int argc, char* argv[], options& opt) {
@@ -76,20 +81,24 @@ namespace NSGAII {
 		// Configuration file options
 		po::options_description config_options("Configuration file options");
 		config_options.add_options()
-			("PopulationType", po::value<std::string>(), "Type of Population: REAL or BINARY")
-			("OutputFile", po::value<std::string>(), "The file where the Output will be written")
-			("HistoryFile", po::value<std::string>(), "The file where the fronts for each generation are written")
-			("ProblemSize", po::value<int>()->default_value(10), "Number of desicion variables")
-			("Nobjectives", po::value<int>()->default_value(2), "Number of conflicting objectives")
-			("PopulationSize", po::value<int>()->default_value(100), "Population size of GA")
-			("LowerBound", po::value<std::vector<std::string> >()->multitoken(), "Lower bound of decision variables (Used only for REAL)")
-			("UpperBound", po::value<std::vector<std::string> >()->multitoken(), "Lower bound of decision variables (Used only for REAL)")
-			("TournamentSize", po::value<int>()->default_value(4), "Selection tournament size")
-			("SDheuristic", po::value<double>()->default_value(0.25), "Standard deviation for heuristic crossover")
-			("MutationProbability", po::value<double>(), "Mutation probability (default: 1/ProblemSize)")
-			("MaxGenerations", po::value<int>()->default_value(200), "Maximum number of generations")
-			("XoverType", po::value<std::string>(), "Crossover: ONECUT,TWOCUT,UNIREAL,UNIBIN,HEURISTIC")
-			("tabuThres", po::value<double>()->default_value(0.0), "Set tabu threshold to enable it")
+		    // GAoptions
+			("GAoptions.PopulationType", po::value<std::string>(), "Type of Population: REAL or BINARY")
+			("GAoptions.ProblemSize", po::value<int>()->default_value(10), "Number of desicion variables")
+			("GAoptions.Nobjectives", po::value<int>()->default_value(2), "Number of conflicting objectives")
+			("GAoptions.PopulationSize", po::value<int>()->default_value(100), "Population size of GA")
+			("GAoptions.LowerBound", po::value<std::vector<std::string> >()->multitoken(), "Lower bound of decision variables (Used only for REAL)")
+			("GAoptions.UpperBound", po::value<std::vector<std::string> >()->multitoken(), "Lower bound of decision variables (Used only for REAL)")
+			("GAoptions.TournamentSize", po::value<int>()->default_value(4), "Selection tournament size")
+			("GAoptions.SDheuristic", po::value<double>()->default_value(0.25), "Standard deviation for heuristic crossover")
+			("GAoptions.MutationProbability", po::value<double>(), "Mutation probability (default: 1/ProblemSize)")
+			("GAoptions.MaxGenerations", po::value<int>()->default_value(200), "Maximum number of generations")
+			("GAoptions.XoverType", po::value<std::string>(), "Crossover: ONECUT,TWOCUT,UNIREAL,UNIBIN,HEURISTIC")
+			("GAoptions.tabuThres", po::value<double>()->default_value(0.0), "Set tabu threshold to enable it")
+            // Outputfiles
+            ("Output.SolutionFile", po::value<std::string>(), "The file where the Output will be written")
+            ("Output.HistoryFile", po::value<std::string>(), "The file where the fronts for each generation are written")
+            ("Output.RestartInFile", po::value<std::string>(), "Provide the file if you need to resume the optimization")
+            ("Output.RestartOutFile", po::value<std::string>(), "The file where the last state of the optimization will be printed")
 			;
 
 		if (vm_cmd.count("help")) {
@@ -119,61 +128,80 @@ namespace NSGAII {
 		if (vm_cmd.count("config")) {
 			std::cout << "Configuration file: " << vm_cmd["config"].as<std::string>().c_str() << std::endl;
 			po::store(po::parse_config_file<char>(vm_cmd["config"].as<std::string>().c_str(), config_options), vm_cfg);
-			opt.populationType = vm_cfg["PopulationType"].as<std::string>();
-			opt.Nobjectives = vm_cfg["Nobjectives"].as<int>();
-			opt.ProblemSize = vm_cfg["ProblemSize"].as<int>();
-			opt.PopulationSize = vm_cfg["PopulationSize"].as<int>();
-			opt.TournamentSize = vm_cfg["TournamentSize"].as<int>();
-			opt.SDheuristic = vm_cfg["SDheuristic"].as<double>();
-			opt.MaxGenerations = vm_cfg["MaxGenerations"].as<int>();
-			opt.XoverType = vm_cfg["XoverType"].as<std::string>();
 
-			if (vm_cfg.count("MutationProbability"))
-				opt.MutationProbability = vm_cfg["MutationProbability"].as<double>();
-			else
-				opt.MutationProbability = 1.0 / static_cast<double>(opt.ProblemSize);
+            { // GA options
+                opt.populationType = vm_cfg["GAoptions.PopulationType"].as<std::string>();
+                opt.ProblemSize = vm_cfg["GAoptions.ProblemSize"].as<int>();
+                opt.Nobjectives = vm_cfg["GAoptions.Nobjectives"].as<int>();
+                opt.PopulationSize = vm_cfg["GAoptions.PopulationSize"].as<int>();
+                opt.TournamentSize = vm_cfg["GAoptions.TournamentSize"].as<int>();
+                opt.SDheuristic = vm_cfg["GAoptions.SDheuristic"].as<double>();
+                opt.MaxGenerations = vm_cfg["GAoptions.MaxGenerations"].as<int>();
+                opt.XoverType = vm_cfg["GAoptions.XoverType"].as<std::string>();
 
-			if (vm_cfg.count("OutputFile"))
-				opt.OutputFile = vm_cfg["OutputFile"].as<std::string>();
-			else
-				opt.OutputFile = "nsgaiiOutput.dat";
+                if (vm_cfg.count("GAoptions.MutationProbability"))
+                    opt.MutationProbability = vm_cfg["GAoptions.MutationProbability"].as<double>();
+                else
+                    opt.MutationProbability = 1.0 / static_cast<double>(opt.ProblemSize);
 
-			if (vm_cfg.count("HistoryFile")) {
-				opt.HistoryFile = vm_cfg["HistoryFile"].as<std::string>();
-				opt.bWriteHistory = true;
-			}
+                opt.tabuThreshold = vm_cfg["GAoptions.tabuThres"].as<double>();
+                if (opt.tabuThreshold > 0)
+                    opt.useTabu = true;
 
-			opt.tabuThreshold = vm_cfg["tabuThres"].as<double>();
-			if (opt.tabuThreshold > 0)
-				opt.useTabu = true;
-			
-			if (opt.populationType.compare("REAL") == 0) {
-				std::vector<std::string> temp = vm_cfg["LowerBound"].as<std::vector<std::string> >();
-				splitString(temp[0], opt.LowerBound);
-				if (opt.ProblemSize != opt.LowerBound.size()) {
-					if (opt.LowerBound.size() == 1) {
-						opt.LowerBound.resize(opt.ProblemSize, opt.LowerBound[0]);
-					}
-					else {
-						std::cout << "The Problem size ~= LowerBound size" << std::endl;
-						return false;
-					}
-				}
+                if (opt.populationType.compare("REAL") == 0) {
+                    std::vector<std::string> temp = vm_cfg["GAoptions.LowerBound"].as<std::vector<std::string> >();
+                    splitString(temp[0], opt.LowerBound);
+                    if (opt.ProblemSize != opt.LowerBound.size()) {
+                        if (opt.LowerBound.size() == 1) {
+                            opt.LowerBound.resize(opt.ProblemSize, opt.LowerBound[0]);
+                        }
+                        else {
+                            std::cout << "The Problem size ~= LowerBound size" << std::endl;
+                            return false;
+                        }
+                    }
 
-				temp.clear();
-				temp = vm_cfg["UpperBound"].as<std::vector<std::string> >();
-				splitString(temp[0], opt.UpperBound);
-				if (opt.ProblemSize != opt.UpperBound.size()) {
-					if (opt.UpperBound.size() == 1) {
-						opt.UpperBound.resize(opt.ProblemSize, opt.UpperBound[0]);
-					}
-					else {
-						std::cout << "The Problem size ~= UpperBound" << std::endl;
-						return false;
-					}
-				}
-			}
+                    temp.clear();
+                    temp = vm_cfg["GAoptions.UpperBound"].as<std::vector<std::string> >();
+                    splitString(temp[0], opt.UpperBound);
+                    if (opt.ProblemSize != opt.UpperBound.size()) {
+                        if (opt.UpperBound.size() == 1) {
+                            opt.UpperBound.resize(opt.ProblemSize, opt.UpperBound[0]);
+                        }
+                        else {
+                            std::cout << "The Problem size ~= UpperBound" << std::endl;
+                            return false;
+                        }
+                    }
+                }
+            }
+
+            { // Output files options
+                if (vm_cfg.count("Output.SolutionFile"))
+                    opt.OutputFile = vm_cfg["Output.SolutionFile"].as<std::string>();
+                else
+                    opt.OutputFile = "nsgaiiOutput.dat";
+
+                if (vm_cfg.count("Output.HistoryFile")) {
+                    opt.HistoryFile = vm_cfg["Output.HistoryFile"].as<std::string>();
+                    opt.bWriteHistory = true;
+                }
+
+                if (vm_cfg.count("Output.RestartInFile")){
+                    opt.RestartInFile  = vm_cfg["Output.RestartInFile"].as<std::string>();
+                    if (!opt.RestartInFile.empty())
+                        opt.bResumeOptimization = true;
+                }
+
+                if (vm_cfg.count("Output.RestartOutFile")){
+                    opt.RestartOutFile = vm_cfg["Output.RestartOutFile"].as<std::string>();
+                    if (!opt.RestartOutFile.empty())
+                        opt.bPrintRestartFile = true;
+                }
+            }
 		}
 		return true;
 	}
 }
+
+#endif // NSGAII_OPTIONS_H

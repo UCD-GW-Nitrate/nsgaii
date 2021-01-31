@@ -1,4 +1,5 @@
-#pragma once
+#ifndef NSGAII_HELPER_H
+#define NSGAII_HELPER_H
 
 #include <iostream>
 //#include <random>
@@ -53,8 +54,8 @@ namespace NSGAII {
 
 		// private constructor
 		SingletonRealGenerator() {
-			//generator.seed(std::time(0));
-			seed = std::chrono::system_clock::now().time_since_epoch().count();
+			seed = std::time(0);
+			//seed = std::chrono::system_clock::now().time_since_epoch().count();
 			generator.seed(seed);
 		}
 
@@ -106,3 +107,5 @@ namespace NSGAII {
 		return n;
 	}
 }
+
+#endif // NSGAII_HELPER_H

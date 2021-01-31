@@ -77,7 +77,7 @@ int main(int argc, char* argv[])
 	int currentGeneration = 0;
 	while (currentGeneration < opt.MaxGenerations) {
 		if (world.rank() == 0)
-			std::cout << "Generation: " << currentGeneration << ", # Pareto Solutions: " << pop.ParetoSize() << std::endl;
+			std::cout << "Generation: " << currentGeneration << ", # Pareto Solutions: " << pop.ParetoSize() << " (Tabu size: " << pop.TabuSize() << ")" << std::endl;
 
 		pop.broadcast(world);
 		//if (world.rank() == 3) {
@@ -91,8 +91,8 @@ int main(int argc, char* argv[])
 			itind = pop.population.find(i);
 			if (itind != pop.population.end()) {
 				std::vector<double> ObjectiveFunctionValues;
-				//NSGAII::Kursawe(itind->second.decisionVariables, ObjectiveFunctionValues);
-				C2VSIM::OF::maxGWSTminCost(itind->second.decisionVariables, ObjectiveFunctionValues, CVD);
+				NSGAII::Kursawe(itind->second.decisionVariables, ObjectiveFunctionValues);
+				//C2VSIM::OF::maxGWSTminCost(itind->second.decisionVariables, ObjectiveFunctionValues, CVD, world.rank());
 				//C2VSIM::OF::maxWTminArea(itind->second.decisionVariables, ObjectiveFunctionValues, CVD);
 				solutions.insert(std::pair<int, std::vector<double > >(itind->first, ObjectiveFunctionValues));
 			}
@@ -191,6 +191,9 @@ int main(int argc, char* argv[])
 
 			if (opt.bWriteHistory)
 				pop.printCurrentPareto(currentGeneration);
+
+			if (opt.bPrintRestartFile)
+			    pop.printResumeFile();
 		}
 		else {
 			pop.population.clear();
@@ -210,24 +213,4 @@ int main(int argc, char* argv[])
 	}
 	pop.printPareto();
 	return 0;
-	
-
-
-
-	//std::string value;
-	//std::vector<double> temp;
-	
-
-	//if (world.rank() == 0) {
-	//	value = "Hello, World!";
-	//	for (int i = 0; i < 1000; ++i) {
-	//		temp.push_back(static_cast<double>(i));
-	//	}
-	//}
-
-	//NSGAII::broad_cast_vector<double>(temp, 0, world);
-
-	
-
-	//std::cout << "Process #" << world.rank() << " says " << temp[900] << std::endl;
 }

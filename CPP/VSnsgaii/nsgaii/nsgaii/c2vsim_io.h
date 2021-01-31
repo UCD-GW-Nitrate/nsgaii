@@ -1,4 +1,7 @@
-#pragma once
+#ifndef C2VSIM_IO_H
+#define C2VSIM_IO_H
+
+
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -751,3 +754,5 @@ namespace C2VSIM {
 		}
 	}
 }
+
+#endif // C2VSIM_IO_H

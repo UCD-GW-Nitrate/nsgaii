@@ -1,4 +1,5 @@
-#pragma once
+#ifndef NSGAII_CORE_H
+#define NSGAII_CORE_H
 
 #include <iostream>
 //#include <random>
@@ -85,9 +86,13 @@ namespace NSGAII {
 		void printObjectives();
 		void printPopulation();
 		int ParetoSize();
+		int TabuSize();
 		void openHistoryFile();
 		void closeHistoryFile();
 		void printCurrentPareto(int gen);
+
+		void printResumeFile();
+
 
 		NSGAII::options options;
 		std::map<int, Individual> population;
@@ -102,7 +107,11 @@ namespace NSGAII {
 		std::list<std::vector<double> > tabuList;
 		bool isTabu(std::vector<double>& v);
 		std::ofstream historyfile;
-	};
+
+		void printResumefile(int ver);
+
+        void setPopulationFromFile();
+    };
 
 	Population::Population(NSGAII::options& opt)
 		:
@@ -110,6 +119,10 @@ namespace NSGAII {
 	{}
 
 	void Population::initializePopulation() {
+	    if (options.bResumeOptimization){
+	        setPopulationFromFile();
+	        return;
+	    }
 		
 		NSGAII::SingletonRealGenerator* RG = RG->getInstance();
 		//RG->printSeed();
@@ -158,6 +171,7 @@ namespace NSGAII {
 			population.insert(std::pair<int, Individual>(i, individual));
 			tabuList.push_front(individual.decisionVariables);
 		}
+
 	}
 
 	void Population::broadcast(boost::mpi::communicator& world) {
@@ -490,9 +504,9 @@ namespace NSGAII {
 		selectedIds.clear();
 		selectedParentIds.clear();
 		for (unsigned int i = 0; i < newPopulation.size(); ++i) {
-			Individual indivudual;
-			indivudual.decisionVariables = newPopulation[i];
-			population.insert(std::pair<int, Individual>(static_cast<int>(i), indivudual));
+			Individual individual;
+			individual.decisionVariables = newPopulation[i];
+			population.insert(std::pair<int, Individual>(static_cast<int>(i), individual));
 		}
 	}
 
@@ -617,11 +631,92 @@ namespace NSGAII {
 					break;
 			}
 			if (d < options.tabuThreshold) {
-				std::cout << "Hey I found one here" << std::endl;
+				//std::cout << "Hey I found one here" << std::endl;
 				exists = true;
 				break;
 			}
 		}
 		return exists;
 	}
+
+	void Population::printResumeFile() {
+	    printResumefile(0);
+        printResumefile(1);
+        printResumefile(2);
+	}
+
+	void Population::printResumefile(int ver) {
+	    std::ofstream  outfile;
+	    outfile.open(options.RestartOutFile + "_" + std::to_string(ver) + ".dat" );
+	    // Print the population and Pareto size
+	    outfile << population.size() << " " << ParetoSize() << std::endl;
+        for (int ipop = 0; ipop < population.size(); ++ipop) {
+            for (int i = 0; i < population[ipop].decisionVariables.size(); ++i) {
+                outfile << population[ipop].decisionVariables[i] << " ";
+            }
+            outfile << std::endl;
+        }
+
+        for(int ipop = 0; ipop < ParetoSolutions.size(); ++ipop){
+            outfile << ParetoSolutions[ipop].rank.accum << " ";
+            for (int i = 0; i < ParetoSolutions[ipop].objectiveFunctions.size(); ++i) {
+                outfile << ParetoSolutions[ipop].objectiveFunctions[i] << " ";
+            }
+            for (int i = 0; i < ParetoSolutions[ipop].decisionVariables.size(); ++i){
+                outfile << ParetoSolutions[ipop].decisionVariables[i] << " ";
+            }
+            outfile << std::endl;
+        }
+        outfile << "PRINTING OK" << std::endl;
+        outfile.close();
+	}
+
+    void Population::setPopulationFromFile() {
+	    std::ifstream initPopStream;
+	    initPopStream.open(options.RestartInFile);
+	    if (!initPopStream.is_open()){
+            std::cout << "Cant open file: " << options.RestartInFile << std::endl;
+            return;
+	    }
+        std::string temp;
+        //std::getline(initPopStream, temp);
+        int npop, npareto;
+        initPopStream >> npop;
+        initPopStream >> npareto;
+        double x;
+        for (int i = 0; i < npop; ++i) {
+            Individual individual;
+            //std::getline(initPopStream, temp);
+            for (int j = 0; j < options.ProblemSize; ++j) {
+                initPopStream >> x;
+                individual.decisionVariables.push_back(x);
+            }
+            population.insert(std::pair<int, Individual>(i, individual));
+            tabuList.push_front(individual.decisionVariables);
+        }
+
+        for (int i = 0; i < npareto; ++i) {
+            Individual individual;
+            //std::getline(initPopStream, temp);
+            initPopStream >> x;
+            individual.rank.accum = x;
+            for (int j = 0; j < options.Nobjectives; ++j) {
+                initPopStream >> x;
+                individual.objectiveFunctions.push_back(x);
+            }
+            for (int j = 0; j < options.ProblemSize; ++j) {
+                initPopStream >> x;
+                individual.decisionVariables.push_back(x);
+            }
+            ParetoSolutions.insert(std::pair<int, Individual>(i, individual));
+            tabuList.push_front(individual.decisionVariables);
+        }
+    }
+
+    int Population::TabuSize() {
+        return tabuList.size();
+    }
 }
+
+
+#endif // NSGAII_CORE_H
