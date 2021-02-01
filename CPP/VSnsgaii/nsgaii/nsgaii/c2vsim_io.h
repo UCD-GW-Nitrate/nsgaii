@@ -286,7 +286,7 @@ namespace C2VSIM {
 		bool readGWHydOut(std::string filename, std::map<int, std::vector<double> >& GWH, int nsteps) {
 			std::ifstream GWfile;
 			GWfile.open(filename);
-			if (!GWfile.is_open()) {
+			if (!GWfile.good()) {
 				std::cout << "Cant open file: " << filename << std::endl;
 				return false;
 			}
