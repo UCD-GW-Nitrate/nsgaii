@@ -91,8 +91,8 @@ int main(int argc, char* argv[])
 			itind = pop.population.find(i);
 			if (itind != pop.population.end()) {
 				std::vector<double> ObjectiveFunctionValues;
-				NSGAII::Kursawe(itind->second.decisionVariables, ObjectiveFunctionValues);
-				//C2VSIM::OF::maxGWSTminCost(itind->second.decisionVariables, ObjectiveFunctionValues, CVD, world.rank());
+				//NSGAII::Kursawe(itind->second.decisionVariables, ObjectiveFunctionValues);
+				C2VSIM::OF::maxGWSTminCost(itind->second.decisionVariables, ObjectiveFunctionValues, CVD, world.rank());
 				//C2VSIM::OF::maxWTminArea(itind->second.decisionVariables, ObjectiveFunctionValues, CVD);
 				solutions.insert(std::pair<int, std::vector<double > >(itind->first, ObjectiveFunctionValues));
 			}

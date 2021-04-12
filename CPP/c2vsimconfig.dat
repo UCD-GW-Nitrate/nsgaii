@@ -14,3 +14,4 @@ BudgetOutputFile = f:\UCDAVIS\C2VsimCG\RunC2Vsim\Results\CVground.BUD
 DivSpecOpt = f:\UCDAVIS\C2VsimCG\RunC2Vsim\tempSpec.dat
 DivDataOpt = f:\UCDAVIS\C2VsimCG\RunC2Vsim\tempData.dat
 ElemMapFile = f:\UCDAVIS\C2VsimCG\OptimResults\DEC_20\ElemMap_DEC20_scen1_95.dat
+DiscountFile = f:\UCDAVIS\C2VsimCG\OptimResults\inputFiles\DiscountFactors3.dat

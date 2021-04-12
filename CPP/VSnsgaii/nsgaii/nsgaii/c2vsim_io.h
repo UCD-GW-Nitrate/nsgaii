@@ -608,6 +608,28 @@ namespace C2VSIM {
 			elfile.close();
 			return true;
 		}
+
+		bool readDiscountFactors(std::string filename, std::vector<double>& DF){
+            std::ifstream dfile;
+            dfile.open(filename);
+            if (!dfile.is_open()) {
+                std::cout << "Cant open file: " << filename << std::endl;
+                return false;
+            }
+            else{
+                DF.clear();
+                std::string line;
+                double v;
+                while(getline(dfile, line)){
+                    if (line.size() > 1){
+                        std::istringstream inp(line.c_str());
+                        inp >> v;
+                        DF.push_back(v);
+                    }
+                }
+            }
+            return true;
+		}
 	}
 
 	namespace WRITERS {
@@ -683,6 +705,7 @@ namespace C2VSIM {
 			std::string DivSpecOpt;
 			std::string DivDataOpt;
 			std::string ElemMapFile;
+			std::string DiscountFile;
 		};
 
 		bool readConfigFile(int argc, char* argv[], C2VSIM::OPTIONS::options& opt) {
@@ -714,6 +737,7 @@ namespace C2VSIM {
 				("DivDataOpt", po::value<std::string>(), "Diversion specification file during optimization")
 				("BudgetOutputFile", po::value<std::string>(), "The name of the output budget file name which will be used for the objective function")
 				("ElemMapFile", po::value<std::string>(), "The name of the element mapping file")
+                ("DiscountFile", po::value<std::string>(), "The name of the element mapping file")
 				;
 
 			if (vm_cmd.count("help")) {
@@ -749,6 +773,7 @@ namespace C2VSIM {
 				opt.DivSpecOpt = vm_cfg["DivSpecOpt"].as<std::string>();
 				opt.DivDataOpt = vm_cfg["DivDataOpt"].as<std::string>();
 				opt.ElemMapFile = vm_cfg["ElemMapFile"].as<std::string>();
+				opt.DiscountFile = vm_cfg["DiscountFile"].as<std::string>();
 			}
 			return true;
 		}

@@ -1,7 +1,7 @@
 #ifndef C2VSIM_GA_H
 #define C2VSIM_GA_H
 
-#define AQUA true
+#define AQUA false
 
 #include <map>
 #include <vector>
@@ -35,10 +35,33 @@ namespace C2VSIM {
 		void setCost(double pland, double maxQ, double totQ, double x_lift, double x_distance) {
 			Land = pland * (maxQ*1000.0 / 75);
 			Capital = 5000 * (maxQ*1000.0 / 75);
-			Water = 0;
+			Water = 0.0;
 			Lift = std::abs(0.17 * 1.45 * x_lift * totQ*1000);
 			Conveyance = 0.02 * x_distance * totQ*1000;
 		}
+
+		void setCost(double pland, double maxQ, std::vector<double>& TS, double x_lift, double x_distance, std::vector<double>& YearlyDiscount, int startIdx, int nElem) {
+			Land = pland * (maxQ * 1000.0 / 75);
+			Capital = 5000 * (maxQ * 1000.0 / 75);
+			Water = 0.0;
+            Lift = 0.0;
+            Conveyance = 0.0;
+            int idx = 0;
+            int count_months = 0;
+			for (int j = startIdx; j < TS.size(); ++j) {
+			    if (idx >= YearlyDiscount.size()){
+			        idx = YearlyDiscount.size() - 1;
+			    }
+			    Lift += std::abs(0.17 * 1.45 * x_lift * TS[j]*YearlyDiscount[idx] * 1000);
+			    Conveyance += 0.02 * x_distance * TS[j]*YearlyDiscount[idx]*1000;
+                count_months++;
+                if (count_months >= 12){
+                    count_months = 0;
+                    idx++;
+                }
+			}
+		}
+
 		COST operator+(const COST& a) const {
 			COST b;
 			b.Land = Land + a.Land;
@@ -72,6 +95,8 @@ namespace C2VSIM {
 		std::vector<double> GWHbaseValue(int node);
 		int nsteps();
 		double calcStorageChange(C2VSIM::GWbudTimeSeries& newGWBUB);
+		void getDiscountFactors(std::vector<double>& DF){DF = DiscountFactors;}
+        int getStartDivStep(){return options.StartDivStep;}
 
 	private:
 		C2VSIM::OPTIONS::options options;
@@ -83,6 +108,7 @@ namespace C2VSIM {
 		C2VSIM::GWbudTimeSeries GWBUD;
 		std::map<int, std::vector<double> > GWH;
 		std::map<int, ElemInfo> elemInfoMap;
+		std::vector<double> DiscountFactors;
 
 		void makeElemDiv();
 		void printElementMapping();
@@ -94,6 +120,7 @@ namespace C2VSIM {
 	{}
 
 	void c2vsimData::readInputFiles() {
+	    C2VSIM::READERS::readDiscountFactors(options.DiscountFile, DiscountFactors);
 		C2VSIM::READERS::readDivElems(options.divElemFile, divElem);
 		makeElemDiv();
 		printElementMapping();
@@ -212,6 +239,8 @@ namespace C2VSIM {
 
 		double setupInputFiles(std::vector<double>& var, C2VSIM::c2vsimData& cvd) {
 			// find the diversion nodes and the elements to apply the water
+			std::vector<double> DF;
+			cvd.getDiscountFactors(DF);
 			std::map<int, std::vector<int> > nodeElemMap;
 			std::map<int, std::vector<int> >::iterator it;
 			int node, elem;
@@ -255,7 +284,8 @@ namespace C2VSIM {
 				for (unsigned int i = 0; i < it->second.size(); ++i) {
 					COST cost;
 					ElemInfo v = cvd.getValue(it->second[i]);
-					cost.setCost(v.p_land, maxq / NreceivElem, totq / NreceivElem, v.x_lift, v.x_distance);
+					//cost.setCost(v.p_land, maxq / NreceivElem, totq / NreceivElem, v.x_lift, v.x_distance);
+					cost.setCost(v.p_land, maxq / NreceivElem, TS, v.x_lift, v.x_distance,DF, cvd.getStartDivStep(),  NreceivElem);
 					div.FERELS.push_back(1);
 					Totalcost = Totalcost + cost;
 				}
@@ -268,6 +298,7 @@ namespace C2VSIM {
 		}
 
 		void maxGWSTminCost(std::vector<double>& var, std::vector<double>& fun, C2VSIM::c2vsimData& cvd, int rank) {
+
 #if AQUA
             // make sure these files do not exists
             boost::filesystem::remove("Results/CVground.bin");
@@ -282,6 +313,7 @@ namespace C2VSIM {
             std::string sim_command = "/opt/wine-stable/bin/wine ";
             sim_command.append(cvd.simulationExe()).append(" CVsimAqua.in >/dev/null");
 #else
+ 
             std::string main_dir = boost::filesystem::current_path().string();
             // Enter into the simulation path
 			boost::filesystem::current_path(cvd.simulationPath());
@@ -325,7 +357,7 @@ namespace C2VSIM {
 			C2VSIM::GWbudTimeSeries simGBbud;
 #if AQUA
             C2VSIM::READERS::readGWBud("Results/CVground.BUD", simGBbud, cvd.nsteps());
-#elif
+#else
 			C2VSIM::READERS::readGWBud(cvd.BudgetOutputFile(), simGBbud, cvd.nsteps());
 #endif
 			double envOF = cvd.calcStorageChange(simGBbud);
