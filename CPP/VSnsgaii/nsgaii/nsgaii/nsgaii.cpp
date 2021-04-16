@@ -76,8 +76,9 @@ int main(int argc, char* argv[])
 
 	int currentGeneration = 0;
 	while (currentGeneration < opt.MaxGenerations) {
-		if (world.rank() == 0)
-			std::cout << "Generation: " << currentGeneration << ", # Pareto Solutions: " << pop.ParetoSize() << " (Tabu size: " << pop.TabuSize() << ")" << std::endl;
+		if (world.rank() == 0){
+            std::cout << "Generation: " << currentGeneration << ", # Pareto Solutions: " << pop.ParetoSize() << " (Tabu size: " << pop.TabuSize() << ")" << std::endl;
+        }
 
 		pop.broadcast(world);
 		//if (world.rank() == 3) {
@@ -87,6 +88,83 @@ int main(int argc, char* argv[])
 		// Evaluate solutions
 		std::map<int, std::vector<double> > solutions;
 		std::map<int, NSGAII::Individual>::iterator itind;
+		if (pop.population.size() % world.size() != 0){
+		    std::cout << "The population size must be divided by the number of processors" << std::endl;
+		    return 0;
+		}
+
+        int Nloops = pop.population.size() / world.size();
+        std::cout << "Nloops " << Nloops << std::endl;
+
+		for (int i = 0; i < Nloops; ++i){
+            world.barrier();
+		    int solutionID = world.rank() + i*world.size();
+		    std::cout << "Rank " <<  world.rank() << " evaluates " << solutionID << std::endl;
+
+            std::vector<double> ObjectiveFunctionValues;
+            itind = pop.population.find(solutionID);
+            if (itind != pop.population.end()){
+                //NSGAII::Kursawe(itind->second.decisionVariables, ObjectiveFunctionValues);
+                C2VSIM::OF::maxGWSTminCost(itind->second.decisionVariables, ObjectiveFunctionValues, CVD, world.rank());
+                ObjectiveFunctionValues[0] += world.rank();
+                ObjectiveFunctionValues[1] += world.rank();
+                std::cout <<  "Rank " <<  world.rank() << " OF: [" << ObjectiveFunctionValues[0] << "," << ObjectiveFunctionValues[1] << "]" << std::endl;
+                //C2VSIM::OF::maxWTminArea(itind->second.decisionVariables, ObjectiveFunctionValues, CVD);
+                //solutions.insert(std::pair<int, std::vector<double > >(solutionID, ObjectiveFunctionValues));
+            }
+            else{
+                std::cerr << "Rank " << world.rank() << " didnt find solution with id " << solutionID << std::endl;
+            }
+            world.barrier();
+
+
+            // processor 0 will gather the solutions from all processors
+            if (world.rank() == 0){
+                std::vector<int> ids;
+                // Receive the solution ids from the other processors
+                boost::mpi::gather(world, solutionID, ids, 0);
+
+                // Receive the objective function values
+                std::vector<std::vector<double> > allF;
+                for (int j = 0; j < opt.Nobjectives; ++j){
+                    std::vector<double> f;
+                    boost::mpi::gather(world, ObjectiveFunctionValues[j], f, 0);
+                    allF.push_back(f);
+                }
+                for (int j = 0; j < world.size(); ++j){
+                    itind = pop.population.find(ids[j]);
+                    if (itind != pop.population.end()){
+                        std::vector<double> objf;
+                        for (int k = 0; k < opt.Nobjectives; ++k) {
+                            itind->second.objectiveFunctions.push_back(allF[k][j]);
+                        }
+                    }
+                    else{
+                        std::cerr << "I can't find the solution id " << ids[j] << " in population" << std::endl;
+                    }
+                }
+
+            }
+            else{
+                // Send the solution id to processor 0
+                boost::mpi::gather(world, solutionID, 0);
+
+                // Send th objective function values
+                for (int j = 0; j < opt.Nobjectives; ++j){
+                    boost::mpi::gather(world, ObjectiveFunctionValues[j], 0);
+                }
+            }
+		}
+        world.barrier();
+		if (world.rank() == 0){
+            for (itind  = pop.population.begin(); itind != pop.population.end(); ++itind){
+                std::cout << itind->second.objectiveFunctions[0] << ", " << itind->second.objectiveFunctions[0] << std::endl;
+            }
+		}
+        world.barrier();
+        return 0;
+
+        /*
 		for (unsigned int i = world.rank(); i < pop.population.size(); i = i + world.size()) {
 			itind = pop.population.find(i);
 			if (itind != pop.population.end()) {
@@ -176,6 +254,7 @@ int main(int argc, char* argv[])
 			if (itsol != solutions.end())
 				++itsol;
 		}
+		*/
 
 		world.barrier();
 		

@@ -94,6 +94,7 @@ namespace NSGAII {
 			("GAoptions.MaxGenerations", po::value<int>()->default_value(200), "Maximum number of generations")
 			("GAoptions.XoverType", po::value<std::string>(), "Crossover: ONECUT,TWOCUT,UNIREAL,UNIBIN,HEURISTIC")
 			("GAoptions.tabuThres", po::value<double>()->default_value(0.0), "Set tabu threshold to enable it")
+
             // Outputfiles
             ("Output.SolutionFile", po::value<std::string>(), "The file where the Output will be written")
             ("Output.HistoryFile", po::value<std::string>(), "The file where the fronts for each generation are written")

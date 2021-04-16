@@ -12,6 +12,18 @@
 namespace po = boost::program_options;
 
 namespace C2VSIM {
+
+    struct DVAR_info{
+        // Diversion id
+        int divID;
+        // Element id
+        int elemId;
+        double area;
+        double p_land;
+        double x_lift;
+        double x_dist;
+    };
+
 	struct DTSdata {
 		std::vector<double> TS;
 		double max;
@@ -609,6 +621,43 @@ namespace C2VSIM {
 			return true;
 		}
 
+		bool readDecisionVariableMaps(std::string filename, std::map<int, DVAR_info>& DVM){
+		    std::ifstream  dvmfile;
+		    dvmfile.open(filename);
+		    if (!dvmfile.is_open()){
+                std::cout << "Cant open file: " << filename << std::endl;
+                return false;
+		    }
+		    else{
+		        DVM.clear();
+                std::string line;
+		        int id, divID, elemId;
+		        double area, p_land, x_lift, x_dst;
+		        while (getline(dvmfile, line)){
+                    if (line.size() > 1){
+                        std::istringstream inp(line.c_str());
+                        inp >> id;
+                        inp >> divID;
+                        inp >> elemId;
+                        inp >> area;
+                        inp >> p_land;
+                        inp >> x_lift;
+                        inp >> x_dst;
+                        DVAR_info dvmi;
+                        dvmi.divID = divID;
+                        dvmi.elemId = elemId;
+                        dvmi.area = area;
+                        dvmi.p_land = p_land;
+                        dvmi.x_lift = x_lift;
+                        dvmi.x_dist = x_dst;
+                        DVM.insert(std::pair<int, DVAR_info>(id,dvmi));
+                    }
+		        }
+                dvmfile.close();
+		        return true;
+		    }
+		}
+
 		bool readDiscountFactors(std::string filename, std::vector<double>& DF){
             std::ifstream dfile;
             dfile.open(filename);
@@ -628,6 +677,7 @@ namespace C2VSIM {
                     }
                 }
             }
+            dfile.close();
             return true;
 		}
 	}
@@ -706,6 +756,7 @@ namespace C2VSIM {
 			std::string DivDataOpt;
 			std::string ElemMapFile;
 			std::string DiscountFile;
+			std::string DVMfile;
 		};
 
 		bool readConfigFile(int argc, char* argv[], C2VSIM::OPTIONS::options& opt) {
@@ -738,6 +789,7 @@ namespace C2VSIM {
 				("BudgetOutputFile", po::value<std::string>(), "The name of the output budget file name which will be used for the objective function")
 				("ElemMapFile", po::value<std::string>(), "The name of the element mapping file")
                 ("DiscountFile", po::value<std::string>(), "The name of the element mapping file")
+                ("DVMfile", po::value<std::string>(), "Decision variables map information")
 				;
 
 			if (vm_cmd.count("help")) {
@@ -761,10 +813,10 @@ namespace C2VSIM {
 				opt.StartDivStep = vm_cfg["StartDivStep"].as<int>();
 				opt.divSpecFile = vm_cfg["divSpecFile"].as<std::string>();
 				opt.divDataFile = vm_cfg["divDataFile"].as<std::string>();
-				opt.divElemFile = vm_cfg["divElemFile"].as<std::string>();
+				//opt.divElemFile = vm_cfg["divElemFile"].as<std::string>();
 				opt.divTimeSeriesFile = vm_cfg["divTimeSeriesFile"].as<std::string>();
 				opt.BaseWTfile = vm_cfg["BaseWTfile"].as<std::string>();
-				opt.ElementInfofile = vm_cfg["ElementInfofile"].as<std::string>();
+				//opt.ElementInfofile = vm_cfg["ElementInfofile"].as<std::string>();
 				opt.SimulationExe = vm_cfg["SimulationExe"].as<std::string>();
 				opt.BudgetExe = vm_cfg["BudgetExe"].as<std::string>();
 				opt.BaseGWbudFile = vm_cfg["BaseGWbudFile"].as<std::string>();
@@ -772,8 +824,9 @@ namespace C2VSIM {
 				opt.BudgetOutputFile = vm_cfg["BudgetOutputFile"].as<std::string>();
 				opt.DivSpecOpt = vm_cfg["DivSpecOpt"].as<std::string>();
 				opt.DivDataOpt = vm_cfg["DivDataOpt"].as<std::string>();
-				opt.ElemMapFile = vm_cfg["ElemMapFile"].as<std::string>();
+				//opt.ElemMapFile = vm_cfg["ElemMapFile"].as<std::string>();
 				opt.DiscountFile = vm_cfg["DiscountFile"].as<std::string>();
+                opt.DVMfile = vm_cfg["DVMfile"].as<std::string>();
 			}
 			return true;
 		}

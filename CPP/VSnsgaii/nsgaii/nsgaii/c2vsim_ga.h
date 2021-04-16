@@ -40,7 +40,7 @@ namespace C2VSIM {
 			Conveyance = 0.02 * x_distance * totQ*1000;
 		}
 
-		void setCost(double pland, double maxQ, std::vector<double>& TS, double x_lift, double x_distance, std::vector<double>& YearlyDiscount, int startIdx, int nElem) {
+		void setCost(double pland, double maxQ, std::vector<double>& TS, double x_lift, double x_distance, std::vector<double>& YearlyDiscount, int startIdx/*, int nElem*/) {
 			Land = pland * (maxQ * 1000.0 / 75);
 			Capital = 5000 * (maxQ * 1000.0 / 75);
 			Water = 0.0;
@@ -82,10 +82,10 @@ namespace C2VSIM {
 		void readInputFiles();
 		void debugMsg();
 		// For a given location in the encoding return the diversion node and the element 
-		bool getNodeElemId(unsigned int i, int& node, int& elem);
+		bool getNodeElemId(int i, int& node, int& elem);
 		C2VSIM::DiversionData getDiversionData();
 		void getDTS(int node, std::vector<double>& TS, double& maxq, double& totq);
-		ElemInfo getValue(int elemId);
+        DVAR_info getValue(int elemId);
 		std::string simulationExe();
 		std::string budgetExe();
 		std::string simulationPath() {return options.SimulationPath; }
@@ -109,6 +109,7 @@ namespace C2VSIM {
 		std::map<int, std::vector<double> > GWH;
 		std::map<int, ElemInfo> elemInfoMap;
 		std::vector<double> DiscountFactors;
+		std::map<int, DVAR_info> decisionVariablesMap;
 
 		void makeElemDiv();
 		void printElementMapping();
@@ -121,14 +122,15 @@ namespace C2VSIM {
 
 	void c2vsimData::readInputFiles() {
 	    C2VSIM::READERS::readDiscountFactors(options.DiscountFile, DiscountFactors);
-		C2VSIM::READERS::readDivElems(options.divElemFile, divElem);
-		makeElemDiv();
-		printElementMapping();
-		C2VSIM::READERS::readDivTimeSeries(options.divTimeSeriesFile, DTS, options.StartDivStep);
+        C2VSIM::READERS::readDivTimeSeries(options.divTimeSeriesFile, DTS, options.StartDivStep);
+        C2VSIM::READERS::readDecisionVariableMaps(options.DVMfile, decisionVariablesMap);
+        //C2VSIM::READERS::readDivElems(options.divElemFile, divElem);
+        //makeElemDiv();
+        //printElementMapping();
 		C2VSIM::READERS::readDivSpec(options.divSpecFile, divData);
 		C2VSIM::READERS::readDivData(options.divDataFile, divData, 1056);
 		C2VSIM::READERS::readGWHydOut(options.BaseWTfile, GWH, options.Nsteps);
-		C2VSIM::READERS::readElemInfo(options.ElementInfofile, elemInfoMap);
+		//C2VSIM::READERS::readElemInfo(options.ElementInfofile, elemInfoMap);
 		C2VSIM::READERS::readGWBud(options.BaseGWbudFile, GWBUD, options.Nsteps);
 	}
 
@@ -153,7 +155,21 @@ namespace C2VSIM {
 		outfile.close();
 	}
 
-	bool c2vsimData::getNodeElemId(unsigned int i, int& node, int& elem) {
+	bool c2vsimData::getNodeElemId(int i, int& node, int& elem) {
+        std::map<int, DVAR_info>::iterator itdvm;
+
+        itdvm = decisionVariablesMap.find(i);
+        if (itdvm != decisionVariablesMap.end()){
+            node = itdvm->second.divID;
+            elem = itdvm->second.elemId;
+            return true;
+        }
+        else{
+            elem = -9;
+            node = -9;
+            return false;
+        }
+
 		std::map<int, int>::iterator it;
 		it = idElem.find(i);
 		if (it != idElem.end()) {
@@ -200,14 +216,15 @@ namespace C2VSIM {
 		}
 	}
 
-	ElemInfo c2vsimData::getValue(int elemId) {
-		std::map<int, ElemInfo>::iterator it;
-		it = elemInfoMap.find(elemId);
-		if (it != elemInfoMap.end()) {
+    DVAR_info c2vsimData::getValue(int elemId) {
+        std::map<int, DVAR_info>::iterator it;
+		//std::map<int, ElemInfo>::iterator it;
+		it = decisionVariablesMap.find(elemId);
+		if (it != decisionVariablesMap.end()) {
 			return it->second;
 		}
 		else {
-			return ElemInfo();
+			return DVAR_info();
 		}
 	}
 
@@ -236,25 +253,35 @@ namespace C2VSIM {
 	}
 
 	namespace OF {
+	    struct ElemDV{
+	        int elem; // This is the element id
+	        int id; // This is the decision variable id
+	    };
 
 		double setupInputFiles(std::vector<double>& var, C2VSIM::c2vsimData& cvd) {
 			// find the diversion nodes and the elements to apply the water
 			std::vector<double> DF;
 			cvd.getDiscountFactors(DF);
-			std::map<int, std::vector<int> > nodeElemMap;
-			std::map<int, std::vector<int> >::iterator it;
+			std::map<int, std::vector<ElemDV> > nodeElemMap;
+			std::map<int, std::vector<ElemDV> >::iterator it;
 			int node, elem;
 			for (unsigned int i = 0; i < var.size(); ++i) {
 				if (var[i] > 0.5) {
-					if (cvd.getNodeElemId(i, node, elem)) {
+					if (cvd.getNodeElemId(i+1, node, elem)) {
 						it = nodeElemMap.find(node);
 						if (it == nodeElemMap.end()) {
-							std::vector<int> temp;
-							temp.push_back(elem);
-							nodeElemMap.insert(std::pair<int, std::vector<int> >(node, temp));
+                            ElemDV ed;
+                            ed.elem = elem;
+                            ed.id = i+1;
+							std::vector<ElemDV> temp;
+							temp.push_back(ed);
+							nodeElemMap.insert(std::pair<int, std::vector<ElemDV> >(node, temp));
 						}
 						else {
-							it->second.push_back(elem);
+                            ElemDV ed;
+                            ed.elem = elem;
+                            ed.id = i+1;
+							it->second.push_back(ed);
 						}
 					}
 				}
@@ -279,13 +306,14 @@ namespace C2VSIM {
 				div.FRACDL = 0; // Fraction for irrigation
 				div.ICFSIRIG = 1;
 				div.ICADJ = 1;
-				div.IERELS = it->second;
+				//div.IERELS = it->second;
 				double NreceivElem = static_cast<double>(it->second.size());
 				for (unsigned int i = 0; i < it->second.size(); ++i) {
 					COST cost;
-					ElemInfo v = cvd.getValue(it->second[i]);
+                    DVAR_info v = cvd.getValue(it->second[i].id);
 					//cost.setCost(v.p_land, maxq / NreceivElem, totq / NreceivElem, v.x_lift, v.x_distance);
-					cost.setCost(v.p_land, maxq / NreceivElem, TS, v.x_lift, v.x_distance,DF, cvd.getStartDivStep(),  NreceivElem);
+					cost.setCost(v.p_land, maxq / NreceivElem, TS, v.x_lift, v.x_dist,DF, cvd.getStartDivStep()/*,  NreceivElem*/);
+                    div.IERELS.push_back(it->second[i].elem);
 					div.FERELS.push_back(1);
 					Totalcost = Totalcost + cost;
 				}
@@ -298,6 +326,10 @@ namespace C2VSIM {
 		}
 
 		void maxGWSTminCost(std::vector<double>& var, std::vector<double>& fun, C2VSIM::c2vsimData& cvd, int rank) {
+            fun.clear();
+            fun.push_back(sqrt((double)rand() / RAND_MAX));
+            fun.push_back(sqrt((double)rand() / RAND_MAX));
+            return;
 
 #if AQUA
             // make sure these files do not exists
